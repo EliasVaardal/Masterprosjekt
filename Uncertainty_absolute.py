@@ -15,7 +15,12 @@ class uncertaintyTools:
         self.std_uncertainty_zo_m_factor = 0.0261
 
         self.flowrates_kg_hr = [9235, 23087, 57719, 92350, 161613, 230876, 300138]
-        self.flowrates_kg_min = [rate / 60 for rate in self.flowrates_kg_hr]
+
+    # Idemyldring.
+    # Vurdere en egen klasse her som samler inn data? Evt fra notatblokk? Excel ark?
+    # La oss si nokken skal bruke programmet, kor skal dei legge inn verdiane? 
+    # Kanskje lage en 'excel' mal for å legge inn tall, den leser og legger alt inn her.
+
 
     ##################################################################################################################################
                         #Uncertainty tools
@@ -25,7 +30,7 @@ class uncertaintyTools:
         return self.k*std_uncertainty
     
     def linear_interpolation(self, flowrate, uncertainty):
-        return np.interp(flowrate, self.flowrates_kg_min, uncertainty)
+        return np.interp(flowrate, self.flowrates_kg_hr, uncertainty)
 
     ##################################################################################################################################
                         #Field uncertainty
@@ -47,70 +52,71 @@ class uncertaintyTools:
         field_repeatability = self.std_uncertainty_field_repeatability
         return field_repeatability
 
-    def get_field_uncertainty_std(self, massflow):
+    def get_field_uncertainty_std(self, flowrate):
         # Felt usikkerhet består av to kontribusjoner:
         # Repeterbarhet til flowmeter under felt kondisjoner
         # Usikkerhet til endring av forhold fra flow kalibrasjon    til felt operasjon
 
-        u_field = (self.get_field_condition_std(massflow) ** 2 +
-                    self.get_field_repeatability_confidence(massflow) ** 2) ** 0.5
+        u_field = math.sqrt(self.get_field_repeatability_std(flowrate)**2 + self.get_field_condition_std(flowrate)**2)
         return u_field  # Convert to relative uncertainty
 
     ##################################################################################################################################
                         #Calibration uncertainty
     #################################################################################################################################
 
-    def get_calibration_deviation_std(self, massflow):
+    def get_calibration_deviation_std(self, flowrate):
         #
         # Calculated from deviation between coriolis mass flow rate and mass flow rate measured by reference ,eter. 
         # See appendix A in NFOGM handbook for calculation.
         
-        deviation = [1.2,0.55,0.3,0.23,0.18,0.2,0.24]
-        linearized_deviation= self.linear_interpolation(massflow,deviation)
-        return linearized_deviation
+        deviation = [1.2,0.55,0.3,0.23,0.18,0.2,0.24] # in percentage, (uncorrected)
+        linearized_deviation= self.linear_interpolation(flowrate,deviation)
+        return linearized_deviation*2
 
-    def get_calibration_reference_std(self, massflow):
+    def get_calibration_reference_std(self, flowrate):
         # Kan  variere med flow.
         # Depends on metering equpiment used at flow laboratory, and will be found in calibration certificate. 
         # Can vary with flowrate.
 
-        reference = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
-        linearized_reference= self.linear_interpolation(massflow, reference)
+        reference = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2] #In percentage, 95% conf
+        linearized_reference= self.linear_interpolation(flowrate, reference)
         return linearized_reference
 
-    def get_calibration_repeatability(self, massflow):
+    def get_calibration_repeatability(self, flowrate):
         # Kan variere med flow.
         # This term covers repeatability of the Coriolis flow meter to be calibrated and the reference measurement.
         # This varies with flow rate - use linear interpolation between points.
         
-        repeatability_95 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
-        linearized_repeatability= self.linear_interpolation(massflow, repeatability_95)
+        repeatability_95 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1] #Repeatability, 95% conf
+        linearized_repeatability= self.linear_interpolation(flowrate, repeatability_95)
         return linearized_repeatability
 
-    def get_calibration_uncertainty(self, massflow):
+    def calculate_calibration_uncertainty(self, flowrate):
         # Calibration uncertainty for a calibrated coriolis mass flowmeter consists of 3 contributions:
         # 1. Uncertainty of correction factor estimate
         # 2. Uncertainty of reference measurement at flow laboratory
         # 3. Repeatability, including both Coriolis flow meter to be calibrated and reference measurements.
-        u_calib = (self.get_calibration_deviation_std(massflow) ** 2 +
-                   self.get_calibration_reference_std(massflow) ** 2 +
-                   self.get_calibration_repeatability(massflow) ** 2) ** 0.5
+
+
+        u_calib = self.get_calibration_deviation_std(flowrate)**2 + self.get_calibration_repeatability(flowrate)**2 + self.get_calibration_reference_std(flowrate)**2
         return u_calib # Convert to relative uncertainty
 
-    def calculate_relative_uncertainty(self, massflow):
+
+
+    def calculate_relative_uncertainty(self, flowrate):
         #The uncertainty for a flow calibrated coriolis mass flow meter consists of two contributions:
         #1. Calibration uncertainty
-        #2. Field uncertainty
-        if massflow == 0:
+        #2. Field 
+        
+        if flowrate == 0:
             return 0
         else:
-            uncertainty_cal_dev = (self.get_calibration_deviation_std(massflow) / massflow) ** 2
-            uncertainty_cal_ref = (self.get_calibration_reference_std(massflow) / massflow) ** 2
-            uncertainty_cal_rept = (self.get_calibration_repeatability(massflow) / massflow) ** 2
+            relative_uncertainty = self.calculate_calibration_uncertainty(flowrate) + self.get_field_uncertainty_std(flowrate)
+        return relative_uncertainty
 
-            uncertainty_field_rept = (self.get_field_repeatability_std(massflow) / massflow) ** 2
-            uncertainty_field_cond = (self.get_field_condition_std(massflow) / massflow) ** 2
 
-            total_relative_uncertainty = np.square(uncertainty_cal_dev + uncertainty_cal_ref + uncertainty_cal_rept +
-            uncertainty_field_rept + uncertainty_field_cond)
-            return total_relative_uncertainty
+def run(flowrate):
+    uncertainty = uncertaintyTools().calculate_calibration_uncertainty(flowrate)
+    print(uncertainty)
+
+run(9235)
