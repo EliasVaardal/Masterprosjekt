@@ -3,12 +3,13 @@
 # Presents data.
 import simulateHRS
 import Uncertainty
+import Uncertainty_absolute
 import numpy as np
 
 class presentData:
     def __init__(self) -> None:
         self.simulation = simulateHRS.simulateHRS()
-        self.uncertainty = Uncertainty.uncertaintyTools()
+        self.uncertainty = Uncertainty_absolute.uncertaintyTools()
 
     def main(self):
         massflow_simulation = self.simulation.generate_simulation_mean()
