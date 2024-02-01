@@ -52,7 +52,7 @@ class uncertaintyTools:
         field_repeatability = self.std_uncertainty_field_repeatability
         return field_repeatability
 
-    def get_field_uncertainty_std(self, flowrate):
+    def calculate_field_sum_variance(self, flowrate):
         # Felt usikkerhet består av to kontribusjoner:
         # Repeterbarhet til flowmeter under felt kondisjoner
         # Usikkerhet til endring av forhold fra flow kalibrasjon    til felt operasjon
@@ -65,42 +65,41 @@ class uncertaintyTools:
     #################################################################################################################################
 
     def get_calibration_deviation_std(self, flowrate):
-        #
         # Calculated from deviation between coriolis mass flow rate and mass flow rate measured by reference ,eter. 
         # See appendix A in NFOGM handbook for calculation.
         
-        deviation = [1.2,0.55,0.3,0.23,0.18,0.2,0.24] # in percentage, (uncorrected)
+        #deviation = [1.2,0.55,0.3,0.23,0.18,0.2,0.24] # in percentage, (uncorrected)
+        deviation = [0.145, 0.145, 0.145, 0.145, 0.145, 0.145, 0.145]
         linearized_deviation= self.linear_interpolation(flowrate,deviation)
-        return linearized_deviation*2
+        return linearized_deviation
 
     def get_calibration_reference_std(self, flowrate):
         # Kan  variere med flow.
         # Depends on metering equpiment used at flow laboratory, and will be found in calibration certificate. 
         # Can vary with flowrate.
 
-        reference = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2] #In percentage, 95% conf
+        reference = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1] #In percentage, std
         linearized_reference= self.linear_interpolation(flowrate, reference)
         return linearized_reference
 
-    def get_calibration_repeatability(self, flowrate):
+    def get_calibration_repeatability_std(self, flowrate):
         # Kan variere med flow.
         # This term covers repeatability of the Coriolis flow meter to be calibrated and the reference measurement.
         # This varies with flow rate - use linear interpolation between points.
         
-        repeatability_95 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1] #Repeatability, 95% conf
-        linearized_repeatability= self.linear_interpolation(flowrate, repeatability_95)
+        repeatability = [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05] #In percentage
+        linearized_repeatability= self.linear_interpolation(flowrate, repeatability)
         return linearized_repeatability
 
-    def calculate_calibration_uncertainty(self, flowrate):
+    def calculate_calibration_sum_variance(self, flowrate):
         # Calibration uncertainty for a calibrated coriolis mass flowmeter consists of 3 contributions:
         # 1. Uncertainty of correction factor estimate
         # 2. Uncertainty of reference measurement at flow laboratory
         # 3. Repeatability, including both Coriolis flow meter to be calibrated and reference measurements.
 
-
-        u_calib = self.get_calibration_deviation_std(flowrate)**2 + self.get_calibration_repeatability(flowrate)**2 + self.get_calibration_reference_std(flowrate)**2
-        return u_calib # Convert to relative uncertainty
-
+        
+        u_calib = self.get_calibration_deviation_std(flowrate)**2 + self.get_calibration_repeatability_std(flowrate)**2 + self.get_calibration_reference_std(flowrate)**2
+        return u_calib
 
 
     def calculate_relative_uncertainty(self, flowrate):
@@ -111,12 +110,39 @@ class uncertaintyTools:
         if flowrate == 0:
             return 0
         else:
-            relative_uncertainty = self.calculate_calibration_uncertainty(flowrate) + self.get_field_uncertainty_std(flowrate)
-        return relative_uncertainty
+            #Sum of variances. In %**2
+            sum_of_variance = self.calculate_calibration_sum_variance(flowrate) + self.calculate_field_sum_variance(flowrate)
+            relative_combined_std_uncertainty = math.sqrt(sum_of_variance)
+            realtive_expanded_uncertainty = self.convert_std_to_confidence(relative_combined_std_uncertainty)
+            return realtive_expanded_uncertainty
+
+
+    ##################################################################################################################################
+                        #Combining uncertainty
+    #################################################################################################################################
+        
+    def total_combined_uncertainty(self, time_increments, uncertaintyarray):
+        total_uncertainty = 0
+        for uncertainty in uncertaintyarray:
+            uncertainty_contribution = uncertainty*time_increments
+            total_uncertainty += uncertainty_contribution
+        #Bedre modularitet om å gange inn "time increments" til slutt etter for løkke? Sida
+        #E(deltaT * q_mi) -> deltaT E(q_mi)
+        return total_uncertainty #Total usikkerhet for heile fylling.
+
+
+
+
+
+
+
+
+
+
+
 
 
 def run(flowrate):
-    uncertainty = uncertaintyTools().calculate_calibration_uncertainty(flowrate)
+    uncertainty = uncertaintyTools().calculate_relative_uncertainty(flowrate)
     print(uncertainty)
-
 run(9235)

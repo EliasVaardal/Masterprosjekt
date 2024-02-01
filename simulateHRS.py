@@ -10,7 +10,7 @@ class simulateHRS:
     def __init__(self) -> None:
         self.temperature = -40 #Degrees celsius
         self.pressure = 700 # Nominal working pressure
-        self.maxFlowRate = 216 #SAE J2601 definerer maks som 3.6kg/hr. 3.6*60 = 216
+        self.maxFlowRate = 216 #SAE J2601 definerer maks som 3.6kg/min. 3.6*60 = 216
         self.massflows = []
 
     def generate_simulation_mean(self):
