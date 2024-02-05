@@ -14,7 +14,7 @@ class correction:
         self.volume = 2.94375 #self.calculate_pipe_volume()
         
         self.R = 8.314 #J/(mol * k)
-        self.temperature = -40 #C
+        #self.temperature = -40 #C
         
         # Inital values
         self.pressure_initial = 700 #bar
