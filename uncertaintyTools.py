@@ -131,9 +131,12 @@ class uncertaintyTools:
         return total_uncertainty #Total usikkerhet for heile fylling.
 
 
-
-
-
+  ##################################################################################################################################
+                        # Flow calculation uncetainty
+  #################################################################################################################################
+    def calculate_std_vol_flowrate_uncertainty(self, qvo, qm, uqm, z0m, uz0m):
+        u_qv0 = math.sqrt((uqm/qm)**2+(uz0m/z0m)**2)*qvo
+        return u_qv0
 
 
 
