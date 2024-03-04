@@ -3,16 +3,16 @@
 import numpy as np
 
 # Presents data.
-import SimulateHRS
-import correction
-import UncertaintyTools
+from simulate_hrs import SimulateHRS
+from correction import Correction
+from uncertainty_tools import UncertaintyTools
 
 
 class PresentData:
     def __init__(self) -> None:
-        self.simulation = SimulateHRS.SimulateHRS()
-        self.uncertainty = UncertaintyTools.uncertaintyTools()
-        self.correction = correction.Correction()
+        self.simulation = SimulateHRS()
+        self.uncertainty = UncertaintyTools()
+        self.correction = Correction()
 
         self.total_mass_delivered = 0
 
