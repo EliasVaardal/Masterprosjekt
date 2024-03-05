@@ -1,4 +1,4 @@
-# This class will serve as the final output of the structure. 
+# This class will serve as the final output of the structure.
 
 import numpy as np
 
@@ -25,9 +25,10 @@ class PresentData:
             uncertainty = self.uncertainty.calculate_relative_uncertainty(massflow)
             print(f"Flow rate: {massflow} ± {np.around(uncertainty,3)}%  kg/min ")
 
-        #Regner ut korregeringer.
+        # Regner ut korregeringer.
         dead_volume = self.correction.calculate_dead_volume()
         self.correction.check_correction(self.total_mass_delivered, dead_volume)
+
 
 data_presenter = PresentData()
 data_presenter.main()

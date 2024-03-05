@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 class CollectData:
     def __init__(self):
         self.execlfile = r"C:\Users\Elias\Downloads\Master_project_sheet.xlsx"
@@ -14,21 +15,22 @@ class CollectData:
     def read_file(self):
         # Calibration
         df_dict = pd.read_excel(self.execlfile, sheet_name=self.sheet1, header=2)
-        self.calibration_data = df_dict.to_dict(orient='List')
+        self.calibration_data = df_dict.to_dict(orient="List")
 
         # field
         df_dict = pd.read_excel(self.execlfile, sheet_name=self.sheet2, header=2)
-        self.field_data = df_dict.to_dict(orient='List')
-        
-        #pipe
-        #df_dict = pd.read_excel(self.execlfile, sheet_name=self.sheet3, header=2, index_col=0)
-        #self.pipe_data = df_dict.to_dict(orient='List')
-    
+        self.field_data = df_dict.to_dict(orient="List")
+
+        # pipe
+        # df_dict = pd.read_excel(self.execlfile, sheet_name=self.sheet3, header=2, index_col=0)
+        # self.pipe_data = df_dict.to_dict(orient='List')
+
     def get_calibration_data(self):
         return self.calibration_data
-    
+
     def get_field_data(self):
         return self.field_data
+
 
 # data_reader = CollectData()
 # data_reader.read_file()
