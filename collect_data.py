@@ -3,7 +3,10 @@ import pandas as pd
 
 class CollectData:
     def __init__(self):
-        self.execlfile = r"C:\Users\Elias\Downloads\Master_project_sheet.xlsx"
+        """
+        Initialize CollectData object.
+        """
+        self.file_path = r"C:\Path\To\Your\Master_project_sheet.xlsx"
         self.sheet1 = "Calibration uncertainty"
         self.sheet2 = "Field uncertainty"
         self.sheet3 = "dead volume data"
@@ -14,11 +17,11 @@ class CollectData:
 
     def read_file(self):
         # Calibration
-        df_dict = pd.read_excel(self.execlfile, sheet_name=self.sheet1, header=2)
+        df_dict = pd.read_excel(self.file_path, sheet_name=self.sheet1, header=2)
         self.calibration_data = df_dict.to_dict(orient="List")
 
         # field
-        df_dict = pd.read_excel(self.execlfile, sheet_name=self.sheet2, header=2)
+        df_dict = pd.read_excel(self.file_path, sheet_name=self.sheet2, header=2)
         self.field_data = df_dict.to_dict(orient="List")
 
         # pipe
@@ -34,3 +37,4 @@ class CollectData:
 
 # data_reader = CollectData()
 # data_reader.read_file()
+# self.execlfile = r"C:\Users\Elias\Downloads\Master_project_sheet.xlsx"

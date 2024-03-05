@@ -36,6 +36,7 @@ class UncertaintyTools:
         self.field_condition_std = None
         self.std_uncertainty_zo_m_factor = 0.0261
         self.flowrate_kg_min = None
+        
 
     def gather_data(self):
         """
