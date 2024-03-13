@@ -29,11 +29,13 @@ class UncertaintyTools:
         Initialize UncertaintyTools object.
         """
         self.k = 2
+        
         self.calibraiton_reference_std = None
         self.calibration_repeatability_std = None
         self.calibration_deviation_std = None
         self.field_repeatability_std = None
         self.field_condition_std = None
+
         self.std_uncertainty_zo_m_factor = 0.0261
         self.flowrate_kg_min = None
         
