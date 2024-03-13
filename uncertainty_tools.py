@@ -16,7 +16,7 @@ Functions:
 import math
 import numpy as np
 
-from collect_data import CollectData as data
+from collect_data import CollectData
 
 
 class UncertaintyTools:
@@ -35,8 +35,7 @@ class UncertaintyTools:
         self.field_repeatability_std = None
         self.field_condition_std = None
         self.std_uncertainty_zo_m_factor = 0.0261
-        self.flowrate_kg_min = None
-        
+        self.flowrate_kg_min = None   
 
     def gather_data(self):
         """
@@ -48,10 +47,11 @@ class UncertaintyTools:
         Returns:
             None
         """
-        data_reader = data()
+        data_reader = CollectData()
         data_reader.read_file()
 
         calibration_data = data_reader.get_calibration_data()
+
         self.flowrate_kg_min = calibration_data["Flowrate [kg/hr]"]
         self.calibration_deviation_std = calibration_data[
             "Calibration Deviation u(cal,dev)"
@@ -98,7 +98,7 @@ class UncertaintyTools:
         Returns:
             float: The interpolated value for the given flowrate.
         """
-
+        #print("flowrate:", flowrate, "self.flowrate_kg_min:", self.flowrate_kg_min, "uncertainty:", uncertainty)
         return np.interp(flowrate, self.flowrate_kg_min, uncertainty)
 
     def calculate_sum_variance(self, *args):
