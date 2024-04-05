@@ -29,7 +29,6 @@ class UncertaintyTools:
         Initialize UncertaintyTools object.
         """
         self.k = 2
-        
         self.calibraiton_reference_std = None
         self.calibration_repeatability_std = None
         self.calibration_deviation_std = None

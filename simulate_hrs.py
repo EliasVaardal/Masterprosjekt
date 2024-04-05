@@ -1,17 +1,21 @@
-# Denne koden har som mål å generere tall som kan ligne på dei under en fylling.
-# Bruker en normalfordeling med numpy
+# Denne koden har som mål å generere flowrates som kan ligne på dei under en fylling.
+# Har to hoved metoder som lager tall:
+# En som lager for minutter, men det er litt rart
+# En anna som lager i sekunder, heilt fram til massen når 6kg.
 
+
+
+# Bruker en normalfordeling med numpy
 # import numpy as np
 import time
-
 # Spørsmål - dersom denne implementasjonen blir brukt til å danne testcase
 
-
-class SimulateHRS:
+class GenerateFlowData:
     def __init__(self) -> None:
         self.temperature = -40  # Degrees celsius
         self.pressure = 700  # Nominal working pressure
         self.max_flow_rate = 216  # SAE J2601 definerer maks som 3.6kg/min. 3.6*60 = 216
+        self.max_flow_rate_g_s = 60 #SAE J2601 60 g /s
         self.massflows = []
 
     def generate_simulation_mean_minutes(self):
@@ -47,4 +51,5 @@ class SimulateHRS:
             self.massflows.append(massflow_kg_second)
             mass_delivered+=massflow_kg_second
         return self.massflows
+
 

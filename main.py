@@ -8,8 +8,6 @@ from simulate_hrs import SimulateHRS
 from correction import Correction
 from uncertainty_tools import UncertaintyTools
 
-
-
 class PresentData:
     def __init__(self) -> None:
         self.simulation = SimulateHRS()
@@ -30,7 +28,6 @@ class PresentData:
 
         print("Simulating mass flow for a HRS with a 95% confidence interval")
         time_intervals = np.arange(len(massflow_simulation))  # Assuming each massflow represents a 10-second interval
-        
         
         for massflow in massflow_simulation:
             self.total_mass_delivered += massflow
