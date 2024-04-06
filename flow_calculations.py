@@ -23,7 +23,6 @@ class FlowProperties:
     A class containing methods for calculating the properties of hydrogen, specifically
     standard volumetric flowrate, energy flowrate, and hydrogen density. 
     """
-    
     def __init__(self):
         self.gas_compressibility_z0 = None  #
         self.gas_constant_r = 8.31451  # (J/mole K)
@@ -37,7 +36,6 @@ class FlowProperties:
     def calculate_std_vol_flowrate(self):
         """
         Calculates the standard volumetric flow rate.
-
         Args:
             self: The instance of the FlowProperties class.
 

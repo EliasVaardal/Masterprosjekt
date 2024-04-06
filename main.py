@@ -1,16 +1,33 @@
-# This class will serve as the final output of the structure.
+"""
+main()
+This module contains the main testing code, utilizing all classes in the uncertainty calculation program.
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Presents data.
-from simulate_hrs import SimulateHRS
+from collect_data import CollectData
+from hrs_config import HRSConfiguration
+from simulate_hrs import GenerateFlowData
 from correction import Correction
 from uncertainty_tools import UncertaintyTools
 
-class PresentData:
+class simulate_and_calculate_flow:
+    """
+    This class utilizes all avaliable classes to generate massflow data(Class GenerateFlowData),
+    read data input from the Excel file (CollectData), store data as a HRS configuration(HRSConfig),
+    calculate uncertainty based on file data(UncertaintyTools), correct the errors (Correction)
+    and finally contains methods to present the data.
+    """
     def __init__(self) -> None:
-        self.simulation = SimulateHRS()
+        self.data_reader = CollectData()
+        self.data_reader.read_file()
+        self.data_reader.
+
+        self.hrs_config = HRSConfiguration(self.data_reader)
+
+
+        self.simulation = GenerateFlowData()
         self.uncertainty = UncertaintyTools()
         self.correction = Correction()
 
@@ -20,7 +37,6 @@ class PresentData:
     def time_simulation_seconds(self):
         """
         The goal of the code is to simulate one filling of a FCEV tank, which is usually around 5-6kg. 
-    
         """ 
 
         self.uncertainty.gather_data()

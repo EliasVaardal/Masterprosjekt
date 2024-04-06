@@ -1,26 +1,29 @@
-# Denne koden har som mål å generere flowrates som kan ligne på dei under en fylling.
-# Har to hoved metoder som lager tall:
-# En som lager for minutter, men det er litt rart
-# En anna som lager i sekunder, heilt fram til massen når 6kg.
+"""
+This module will generate flowdata similar to those seen in a HRS.
+"""
 
-
-
-# Bruker en normalfordeling med numpy
-# import numpy as np
-import time
-# Spørsmål - dersom denne implementasjonen blir brukt til å danne testcase
+import numpy as np
+# import time
 
 class GenerateFlowData:
+    """
+    
+    """
     def __init__(self) -> None:
-        self.temperature = -40  # Degrees celsius
-        self.pressure = 700  # Nominal working pressure
-        self.max_flow_rate = 216  # SAE J2601 definerer maks som 3.6kg/min. 3.6*60 = 216
+        """
+        
+        """
+        self.max_flow_rate_min_s = 3.6 # SAE J2601 definerer maks som 3.6kg/min. 
+        self.max_flow_rate_kg_hr = 216   # 3.6*60 = 216
         self.max_flow_rate_g_s = 60 #SAE J2601 60 g /s
         self.massflows = []
 
     def generate_simulation_mean_minutes(self):
-        # Denne klassen kan generere 'mean' som sendes inn i generate_mass_flow n antall ganger.
-        # Den har tre nivå: øking av masseflow rate, stabil ved topp, og senking av rate.
+        """
+        This method generates flow rates similar to those seen in a HRS, in the
+        form of kg/minute. It has 3 stages, increase, mass_flowrate_top, and 
+        decline.  
+        """
         for flow_rate in range(0, 37):  # Assuming increments of 0.1 for 0 to 3.6
             # print(f"Flow Rate: {flow_rate / 10} kg/s")
             # time.sleep(0.1)
@@ -40,6 +43,13 @@ class GenerateFlowData:
         return self.massflows
 
     def generate_simulation_mean_seconds(self):
+        # TODO: Gjør om til g/s. 
+        """
+        This method generates flow rates similar to those seen in a HRS, in the
+        form of kg/second. It has 3 stages, increase, mass_flowrate_top, and 
+        decline.  
+        """
+
         maximum_flowrate_kgmin = 36
         mass_delivered = 0
         maximum_flowrate_sec = maximum_flowrate_kgmin / 60

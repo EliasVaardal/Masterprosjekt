@@ -28,6 +28,7 @@ class UncertaintyTools:
         """
         Initialize UncertaintyTools object.
         """
+
         self.k = 2
         self.calibraiton_reference_std = None
         self.calibration_repeatability_std = None
@@ -36,38 +37,7 @@ class UncertaintyTools:
         self.field_condition_std = None
 
         self.std_uncertainty_zo_m_factor = 0.0261
-        self.flowrate_kg_min = None   
-
-    def gather_data(self):
-        """
-        Reads data from an Excel sheet using the CollectData class.
-        It retrieves calibration and field data, as well as HRS dimensions
-        from three seperate sheets. 
-        Args:
-            None
-        Returns:
-            None
-        """
-        data_reader = CollectData()
-        data_reader.read_file()
-
-        calibration_data = data_reader.get_calibration_data()
-
-        self.flowrate_kg_min = calibration_data["Flowrate [kg/hr]"]
-        self.calibration_deviation_std = calibration_data[
-            "Calibration Deviation u(cal,dev)"
-        ]
-        self.calibration_repeatability_std = calibration_data[
-            "Calibration Repeatability u(cal,rept)"
-        ]
-        self.calibraiton_reference_std = calibration_data[
-            "Calibration Reference u(cal,ref)"
-        ]
-
-        field_data = data_reader.get_field_data()
-        self.field_repeatability_std = field_data["Field Repeatability u(field,rept)"]
-        self.field_condition_std = field_data["Field Condition u(field,cond)"]
-        # self.field_data = data_reader.get_field_data()
+        self.flowrate_kg_min = None
 
 
     def convert_std_to_confidence(self, std_uncertainty):
