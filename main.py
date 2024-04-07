@@ -22,7 +22,6 @@ class simulate_and_calculate_flow:
     def __init__(self) -> None:
         self.data_reader = CollectData()
         self.data_reader.read_file()
-        self.data_reader.
 
         self.hrs_config = HRSConfiguration(self.data_reader)
 

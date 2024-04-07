@@ -12,32 +12,22 @@ Classes:
 Functions:
     None
 """
-
 import math
 import numpy as np
-
-from collect_data import CollectData
-
+from hrs_config import HRSConfiguration
 
 class UncertaintyTools:
     """
     A class containing methods for uncertainty calculation and manipulation.
     """
 
-    def __init__(self):
+    def __init__(self, hrs_config : HRSConfiguration):
         """
         Initialize UncertaintyTools object.
         """
-
+        self.hrs_config = hrs_config
         self.k = 2
-        self.calibraiton_reference_std = None
-        self.calibration_repeatability_std = None
-        self.calibration_deviation_std = None
-        self.field_repeatability_std = None
-        self.field_condition_std = None
-
         self.std_uncertainty_zo_m_factor = 0.0261
-        self.flowrate_kg_min = None
 
 
     def convert_std_to_confidence(self, std_uncertainty):
@@ -70,7 +60,7 @@ class UncertaintyTools:
             float: The interpolated value for the given flowrate.
         """
         #print("flowrate:", flowrate, "self.flowrate_kg_min:", self.flowrate_kg_min, "uncertainty:", uncertainty)
-        return np.interp(flowrate, self.flowrate_kg_min, uncertainty)
+        return np.interp(flowrate, self.hrs_config.flowrates_kg_min, uncertainty)
 
     def calculate_sum_variance(self, *args):
         """
@@ -106,8 +96,10 @@ class UncertaintyTools:
         Returns:
             float: The interpolated field condition standard uncertainty for the given flowrate.
         """
-
-        return self.linear_interpolation(flowrate, self.field_condition_std)
+        if self.hrs_config.multiple_field_condition_bool:
+            return self.linear_interpolation(flowrate, self.hrs_config.get_field_condition())
+        else:
+            return self.hrs_config.get_field_condition()
 
     def get_field_repeatability_std(self, flowrate):
         """
@@ -120,8 +112,10 @@ class UncertaintyTools:
         Returns:
             float: The interpolated field repeatability standard uncertainty.
         """
-        return self.linear_interpolation(flowrate, self.field_repeatability_std)
-
+        if self.hrs_config.multiple_field_repeatability_bool:
+            return self.linear_interpolation(flowrate, self.hrs_config.get_field_repeatability())
+        else:
+            return self.hrs_config.get_field_repeatability()
 
     def get_calibration_deviation_std(self, flowrate):
         """
@@ -134,8 +128,10 @@ class UncertaintyTools:
         Returns:
             float: The interpolated calibration deviation standard uncertainty.
         """
-        return self.linear_interpolation(flowrate, self.calibration_deviation_std)
-
+        if self.hrs_config.multiple_calibration_deviation_bool:
+            return self.linear_interpolation(flowrate, self.hrs_config.get_calibration_deviation())
+        else:
+            return self.hrs_config.get_calibration_deviation()
 
     def get_calibration_reference_std(self, flowrate):
         """
@@ -148,7 +144,10 @@ class UncertaintyTools:
         Returns:
             float: The interpolated calibration reference standard uncertainty.
         """
-        return self.linear_interpolation(flowrate, self.calibraiton_reference_std)
+        if self.hrs_config.multiple_calibration_reference_bool:
+            return self.linear_interpolation(flowrate, self.hrs_config.get_calibration_reference())
+        else:
+            return self.hrs_config.get_calibration_reference()
 
 
     def get_calibration_repeatability_std(self, flowrate):
@@ -163,8 +162,10 @@ class UncertaintyTools:
         Returns:
             float: The interpolated calibration repeatability standard uncertainty.
         """
-        return self.linear_interpolation(flowrate, self.calibration_repeatability_std)
-
+        if self.hrs_config.multiple_calibration_repeatability_bool:
+            return self.linear_interpolation(flowrate, self.hrs_config.get_calibration_repeatability())
+        else:
+            return self.hrs_config.get_calibration_repeatability()
 
     def total_combined_uncertainty(self, time_increments, uncertaintyarray):
         """
