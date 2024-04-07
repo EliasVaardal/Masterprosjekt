@@ -9,12 +9,13 @@ Classes:
 """
 
 import math
-
+from hrs_config import HRSConfiguration
 class Correction:
     """
     Gives methods for calculating correctional errors.
     """
-    def __init__(self):
+    def __init__(self, hrs_config : HRSConfiguration):
+        self.hrs_config = hrs_config
         # Pipe variables
         self.radius = 0.25
         self.height = 15

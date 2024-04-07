@@ -219,20 +219,20 @@ class UncertaintyTools:
         if flowrate == 0:
             return 0
 
-        calibration_deviation_interp = self.get_calibration_deviation_std(flowrate)
-        calibration_repeatability_interp = self.get_calibration_repeatability_std(
+        calibration_deviation = self.get_calibration_deviation_std(flowrate)
+        calibration_repeatability = self.get_calibration_repeatability_std(
             flowrate
         )
-        calibration_reference_interp = self.get_calibration_reference_std(flowrate)
-        field_repeatability_interp = self.get_field_repeatability_std(flowrate)
-        field_condition_interp = self.get_field_condition_std(flowrate)
+        calibration_reference = self.get_calibration_reference_std(flowrate)
+        field_repeatability = self.get_field_repeatability_std(flowrate)
+        field_condition = self.get_field_condition_std(flowrate)
 
         var = self.calculate_sum_variance(
-            calibration_deviation_interp,
-            calibration_repeatability_interp,
-            calibration_reference_interp,
-            field_condition_interp,
-            field_repeatability_interp,
+            calibration_deviation,
+            calibration_repeatability,
+            calibration_reference,
+            field_condition,
+            field_repeatability,
         )
         return self.convert_std_to_confidence(var)
 

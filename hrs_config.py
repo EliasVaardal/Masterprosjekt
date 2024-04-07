@@ -30,10 +30,10 @@ class HRSConfiguration:
         self.dispenser_hose_volume = None
         self.dispenser_hose_volume_uncertainty = None
         self.dead_volume_size_uncertainty = None
-        self.depressurization_vent_volume_uncertainty = None  
+        self.depressurization_vent_volume_uncertainty = None
 
         # Meter Uncertainties
-        self.flowrates_kg_min = None # Flowrates for linear interpolation use. 
+        self.flowrates_kg_min = None # Flowrates for linear interpolation use.
         self.calibraiton_reference_std = None
         self.calibration_repeatability_std = None
         self.calibration_deviation_std = None
