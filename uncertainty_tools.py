@@ -12,23 +12,26 @@ Classes:
 Functions:
     None
 """
+
 import math
 import numpy as np
 from hrs_config import HRSConfiguration
+from flow_calculations import FlowProperties
+
 
 class UncertaintyTools:
     """
     A class containing methods for uncertainty calculation and manipulation.
     """
 
-    def __init__(self, hrs_config : HRSConfiguration):
+    def __init__(self, hrs_config: HRSConfiguration):
         """
         Initialize UncertaintyTools object.
         """
+        self.flow_properties = FlowProperties()
         self.hrs_config = hrs_config
         self.k = 2
         self.std_uncertainty_zo_m_factor = 0.0261
-
 
     def convert_std_to_confidence(self, std_uncertainty):
         """
@@ -59,7 +62,6 @@ class UncertaintyTools:
         Returns:
             float: The interpolated value for the given flowrate.
         """
-        #print("flowrate:", flowrate, "self.flowrate_kg_min:", self.flowrate_kg_min, "uncertainty:", uncertainty)
         return np.interp(flowrate, self.hrs_config.flowrates_kg_min, uncertainty)
 
     def calculate_sum_variance(self, *args):
@@ -90,14 +92,16 @@ class UncertaintyTools:
         Retrieve the interpolated field condition standard uncertainty for the given flowrate.
 
         Args:
-            flowrate (float): The flowrate for which to retrieve the field condition standard 
+            flowrate (float): The flowrate for which to retrieve the field condition standard
             uncertainty.
 
         Returns:
             float: The interpolated field condition standard uncertainty for the given flowrate.
         """
         if self.hrs_config.multiple_field_condition_bool:
-            return self.linear_interpolation(flowrate, self.hrs_config.get_field_condition())
+            return self.linear_interpolation(
+                flowrate, self.hrs_config.get_field_condition()
+            )
         else:
             return self.hrs_config.get_field_condition()
 
@@ -106,14 +110,16 @@ class UncertaintyTools:
         Retrieve the interpolated field repeatability standard uncertainty for the given flowrate.
 
         Args:
-            flowrate (float): The flowrate for which to retrieve the field repeatability standard 
+            flowrate (float): The flowrate for which to retrieve the field repeatability standard
             uncertainty.
 
         Returns:
             float: The interpolated field repeatability standard uncertainty.
         """
         if self.hrs_config.multiple_field_repeatability_bool:
-            return self.linear_interpolation(flowrate, self.hrs_config.get_field_repeatability())
+            return self.linear_interpolation(
+                flowrate, self.hrs_config.get_field_repeatability()
+            )
         else:
             return self.hrs_config.get_field_repeatability()
 
@@ -122,14 +128,16 @@ class UncertaintyTools:
         Retrieve the interpolated calibration deviation standard uncertainty for the given flowrate.
 
         Args:
-            flowrate (float): The flowrate for which to retrieve the calibration deviation standard 
+            flowrate (float): The flowrate for which to retrieve the calibration deviation standard
             uncertainty.
 
         Returns:
             float: The interpolated calibration deviation standard uncertainty.
         """
         if self.hrs_config.multiple_calibration_deviation_bool:
-            return self.linear_interpolation(flowrate, self.hrs_config.get_calibration_deviation())
+            return self.linear_interpolation(
+                flowrate, self.hrs_config.get_calibration_deviation()
+            )
         else:
             return self.hrs_config.get_calibration_deviation()
 
@@ -138,32 +146,35 @@ class UncertaintyTools:
         Retrieve the interpolated calibration reference standard uncertainty for the given flowrate.
 
         Args:
-            flowrate (float): The flowrate for which to retrieve the calibration reference standard 
+            flowrate (float): The flowrate for which to retrieve the calibration reference standard
             uncertainty.
 
         Returns:
             float: The interpolated calibration reference standard uncertainty.
         """
         if self.hrs_config.multiple_calibration_reference_bool:
-            return self.linear_interpolation(flowrate, self.hrs_config.get_calibration_reference())
+            return self.linear_interpolation(
+                flowrate, self.hrs_config.get_calibration_reference()
+            )
         else:
             return self.hrs_config.get_calibration_reference()
 
-
     def get_calibration_repeatability_std(self, flowrate):
         """
-        Retrieve the interpolated calibration repeatability standard uncertainty for the given 
+        Retrieve the interpolated calibration repeatability standard uncertainty for the given
         flowrate.
 
         Args:
-            flowrate (float): The flowrate for which to retrieve the calibration repeatability 
+            flowrate (float): The flowrate for which to retrieve the calibration repeatability
             standard uncertainty.
 
         Returns:
             float: The interpolated calibration repeatability standard uncertainty.
         """
         if self.hrs_config.multiple_calibration_repeatability_bool:
-            return self.linear_interpolation(flowrate, self.hrs_config.get_calibration_repeatability())
+            return self.linear_interpolation(
+                flowrate, self.hrs_config.get_calibration_repeatability()
+            )
         else:
             return self.hrs_config.get_calibration_repeatability()
 
@@ -183,7 +194,6 @@ class UncertaintyTools:
         """
         return sum(uncertainty * time_increments for uncertainty in uncertaintyarray)
 
-
     def calculate_std_vol_flowrate_uncertainty(self, qvo, qm, uqm, z0m, uz0m):
         """
         Calculate the standard uncertainty for the standard volumetric flow rate.
@@ -199,7 +209,6 @@ class UncertaintyTools:
             float: The standard uncertainty of the volumetric flow rate.
         """
         return math.sqrt((uqm / qm) ** 2 + (uz0m / z0m) ** 2) * qvo
-
 
     def calculate_relative_uncertainty(self, flowrate):
         """
@@ -220,9 +229,7 @@ class UncertaintyTools:
             return 0
 
         calibration_deviation = self.get_calibration_deviation_std(flowrate)
-        calibration_repeatability = self.get_calibration_repeatability_std(
-            flowrate
-        )
+        calibration_repeatability = self.get_calibration_repeatability_std(flowrate)
         calibration_reference = self.get_calibration_reference_std(flowrate)
         field_repeatability = self.get_field_repeatability_std(flowrate)
         field_condition = self.get_field_condition_std(flowrate)
@@ -235,10 +242,61 @@ class UncertaintyTools:
             field_repeatability,
         )
         return self.convert_std_to_confidence(var)
+    
+    def calculate_density_uncertainty(self, current_pressure, current_temperature):
+        """
+        ..Absolutt?
+        Calculates the density uncertainty based off: (n * m) / V, where n is the ideal
+        gas law. Utilizes propagation of uncertainty and partial derivation to reach
+        the uncetainty.
+
+        Parameters:
+            - Pressure
+            - Temperature
+        
+        Returns:
+            - Density uncertainty
+        """
+        uncertainty_pressure = self.hrs_config.pressure_sensor_uncertainty
+        uncertainty_temperature = self.hrs_config.temperature_sensor_uncertainty
+        vent_volume = self.hrs_config.depressurization_vent_volume
+        vent_uncertainty = self.hrs_config.depressurization_vent_volume_uncertainty
+        dn_dp = (vent_volume/(self.flow_properties.gas_constant_r*current_temperature))*uncertainty_pressure**2
+        dn_dv = (current_pressure/(self.flow_properties.gas_constant_r*current_temperature))*vent_uncertainty**2
+        dn_dt = (current_pressure*vent_volume/(self.flow_properties.gas_constant_r*current_temperature**2))*uncertainty_temperature**2
+        uncertainty_n = math.sqrt(dn_dp+dn_dv+dn_dt)
+
+        # Finner så usikkerheten til tetthet. dp_dm er 0, siden usikkerheten til den er nær null.?
+        n = (current_pressure * vent_volume ) / (self.flow_properties.gas_constant_r*current_temperature)
+        dp_dn = (self.flow_properties.molar_mass_m / vent_volume)*uncertainty_n**2
+        dp_dv = (self.flow_properties.molar_mass_m*n/(vent_volume**2))**2
+        return math.sqrt(dp_dn+dp_dv)
+    
+    def calculate_depress_uncertainty(self, pressure, temperature):
+        """
+        Calculates the uncertainty of the depressurization. The mass depressurized
+        is vented to the environment, and is consecutively given as M = p*V
+
+        Parameters:
+            - Pressure
+            - Temperature
+
+        Returns:
+            - Uncertainty of the mass depressurized
+        """
+
+        vent_volume = self.hrs_config.depressurization_vent_volume
+        vent_uncertainty = self.hrs_config.depressurization_vent_volume_uncertainty
+        density = self.flow_properties.calculate_hydrogen_density(pressure, temperature, vent_volume)
+        density_uncertainty = self.calculate_density_uncertainty(pressure, temperature)
+
+        dm_dp = (vent_volume*density_uncertainty)**2
+        dm_dv = (density* vent_uncertainty)**2
+        return math.sqrt(dm_dp+ dm_dv)
 
 
-#def run():
-    # uncertainty = UncertaintyTools().calculate_relative_uncertainty(flowrate)
-    # print(uncertainty)
-    # unc = UncertaintyTools()
-    #unc.gather_data()
+# def run():
+# uncertainty = UncertaintyTools().calculate_relative_uncertainty(flowrate)
+# print(uncertainty)
+# unc = UncertaintyTools()
+# unc.gather_data()

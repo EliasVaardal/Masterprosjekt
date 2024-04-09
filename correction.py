@@ -2,55 +2,34 @@
 Correction module
 
 This module calculates the amount system must correct for to ensure no error
-due to dead-volume and vented hydrogen. 
+due to dead-volume and vented hydrogen.
 
 Classes:
     Correction: A class that gives methods for correcting nessecary errors.
 """
-
 import math
 from hrs_config import HRSConfiguration
+from flow_calculations import FlowProperties
+
+
 class Correction:
     """
     Gives methods for calculating correctional errors.
     """
-    def __init__(self, hrs_config : HRSConfiguration):
+
+    def __init__(self, hrs_config: HRSConfiguration):
         self.hrs_config = hrs_config
+        self.flow_properties = FlowProperties()
+
         # Pipe variables
-        self.radius = 0.25
-        self.height = 15
-        self.volume = 2.94375  # self.calculate_pipe_volume()
-        self.gas_constant = 8.314  # J/(mol * k)
-        # self.temperature = -40 #C
-        # Inital values
+
         self.pressure_initial = 700  # bar
         self.temperature_initial = 233.15  # Kelvin
         # Subsequent values
         self.pressure_subsequent = 350  # bar
         self.temperature_subsequent = 233.15  # kelvin
 
-    def calculate_pipe_volume(self):
-        """
-        Calculates the volume of a pipe.
-        """
-        self.volume = math.pi * self.radius**2 * self.height
-
-    def calculate_ideal_gas_law_n(self, P, V, R, T):
-        """
-        Utilizes the ideal gas law to calculate the amount of moles n.
-        """
-        return (P * V) / (R * T)
-
-    def calculate_ideal_gas_law_V(self, delta_n):
-        """
-        Calculate the volume V
-        """
-        V = (
-            delta_n * self.gas_constant * self.temperature_subsequent
-        ) / self.pressure_subsequent
-        return V
-    
-    def calculate_vented_mass(self, volume_vent, current_density):
+    def calculate_vented_mass(self, volume_vent, density):
         """
         Calculates the mass of hydrogen lost due to depressurization of the dispenser hose.
         Parameters:
@@ -59,31 +38,49 @@ class Correction:
         Returns:
             - density of hydrogen at the end of current fueling
         """
-        m_vv = volume_vent * current_density
+        m_vv = volume_vent * density
         return m_vv
-    
-    def calculate_dead_volume(self, dead_volume, previous_density, current_density):
+
+    def calculate_change_in_dead_volume_mass(self, previous_density, current_density):
         """
-        Calculates dead volume based off (IMEKO,2022). 
+        Calculates dead volume based off (IMEKO,2022).
+
         Parameters:
-            - Dead_volume: volume of piping between flow meter and cutoff valve
             - Previous density calculated by hydrogen density equation
             - Current density calculated by hydrogen density equation
+
         Returns:
             - Dead volume to be substracted from mass delivered total.
         """
-        
-        dead_volume_mass = dead_volume(current_density - previous_density)
+        dead_volume_mass = self.hrs_config.dead_volume*(current_density - previous_density)
         return dead_volume_mass
-    
 
     def check_correction(self, total_mass_delivered, dead_volume):
+        """
+        A testing method to test if the actual correction is done correctly,
+        only looking at previous and current pressure. 
+
+        Will probably be removed.
+        """
         if self.pressure_initial < self.pressure_subsequent:
             print("The customer should recieve less hydrogen than ordered.")
         if self.pressure_subsequent < self.pressure_initial:
             print("The customer should get more hydrogen than ordered.")
-
         print(f"Total mass delivered (uncorrected): {total_mass_delivered} kg")
         print(
             f"Total mass delivered (corrected): {total_mass_delivered - dead_volume} kg"
         )
+
+    def calculate_total_correction_error(self, pressure_initial, temperature_initial, pressure_subsequent, temperature_subsequent):
+        """
+        Calculates the total correction error from dead volume and depressurized vent. 
+        """
+        initial_density_dead_volume = self.flow_properties.calculate_hydrogen_density(pressure_initial, temperature_initial, self.hrs_config.dead_volume)
+        subsequent_density_dead_volume = self.flow_properties.calculate_hydrogen_density(pressure_subsequent, temperature_subsequent, self.hrs_config.dead_volume)
+        dead_volume = self.calculate_change_in_dead_volume_mass(subsequent_density_dead_volume, initial_density_dead_volume)
+
+        density_vent = self.flow_properties.calculate_hydrogen_density(pressure_subsequent, temperature_subsequent, self.hrs_config.depressurization_vent_volume)
+        vented_mass = self.calculate_vented_mass(self.hrs_config.depressurization_vent_volume, density_vent)
+
+        total_error = dead_volume + vented_mass
+        return total_error

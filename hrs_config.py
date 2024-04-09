@@ -8,14 +8,15 @@ through the Excel sheet.
 class HRSConfiguration:
     """
     This class will store data about the hydrogen refueling station (HRS) configuration, in
-    addition to multiple "get" functions to allow for data retrieval. 
+    addition to multiple "get" functions to allow for data retrieval.
     """
+
     def __init__(self):
         """
         The class will store variables from the Excel sheet. The initial
         values are dummy values :).
         """
-        #HRS Decisions
+        # HRS Decisions
         self.correct_for_dead_volume_bool = None
         self.correct_for_depress_bool = None
         self.multiple_calibration_deviation_bool = None
@@ -25,47 +26,55 @@ class HRSConfiguration:
         self.multiple_field_condition_bool = None
 
         # Table 2 volume and related uncertainties.
-        self.dead_volume_size = None
+        self.dead_volume = None
         self.depressurization_vent_volume = None
-        self.dispenser_hose_volume = None
-        self.dispenser_hose_volume_uncertainty = None
         self.dead_volume_size_uncertainty = None
         self.depressurization_vent_volume_uncertainty = None
 
         # Meter Uncertainties
-        self.flowrates_kg_min = None # Flowrates for linear interpolation use.
+        self.flowrates_kg_min = None  # Flowrates for linear interpolation use.
         self.calibraiton_reference_std = None
         self.calibration_repeatability_std = None
         self.calibration_deviation_std = None
         self.field_repeatability_std = None
         self.field_condition_std = None
 
+        # Sensor uncertainties
+        self.pressure_sensor_uncertainty = None
+        self.temperature_sensor_uncertainty = None
+
     def get_dead_volume_size(self):
-        return self.dead_volume_size
-    
+        """Return the size of the dead volume."""
+        return self.dead_volume
+
     def get_depressurization_vent_volume(self):
+        """Return the volume of the depressurization vent."""
         return self.depressurization_vent_volume
-    
-    def get_dispenser_hose_volume(self):
-        return self.dispenser_hose_volume
-    
+
     def get_correct_for_dead_volume(self):
+        """Return the correction status for the dead volume."""
         return self.get_correct_for_dead_volume
-    
+
     def get_correct_for_depress(self):
+        """Return whether there is a correction for depressurization."""
         return self.correct_for_depress_bool
-    
+
     def get_calibration_deviation(self):
+        """Return the standard deviation for calibration."""
         return self.calibration_deviation_std
-    
+
     def get_calibration_reference(self):
+        """Return the standard deviation of the calibration reference."""
         return self.calibraiton_reference_std
-    
+
     def get_calibration_repeatability(self):
+        """Return the standard deviation for calibration repeatability."""
         return self.calibration_repeatability_std
-    
+
     def get_field_repeatability(self):
+        """Return the standard deviation for field condition repeatability."""
         return self.field_condition_std
-    
+
     def get_field_condition(self):
+        """Return the standard deviation for field conditions."""
         return self.field_condition_std

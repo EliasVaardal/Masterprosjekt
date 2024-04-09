@@ -68,20 +68,35 @@ class FlowProperties:
             Calculated energy flowrate value []
         """
         return self.h_sm * self.q_m
+    
+    def calculate_amount_of_moles_n(self, pressure, temperature, volume):
+        """
+        Calculate amount of moles, based on the ideal gas law.
+
+        Parameters:
+            - Pressure
+            - Temperature
+            - Volume
+        
+        Returns:
+            - Calculated amount of moles n.
+        """
+        return (pressure *volume ) / (self.gas_constant_r*temperature)
 
 
-    def calculate_hydrogen_density(self, temperature, pressure, volume):
+    def calculate_hydrogen_density(self, pressure, temperature, volume):
         """
         Calculate the hydrogen by utilizing the ideal gas law. This is done by
         first calculating number of moles, then mass by number of moles times 
+
         Parameters:
             - Pressure: Pressure of the gas ()
-            - Volume: Volume of the gas
             - Temperature: Temperature of the gas (Kelvin)
-            - Gas constant r: Ideal gas constant
+            - Volume: Volume of the gas
+
         Returns: 
-            Calculated density
+            Calculated density (kg/m3)
         """
-        number_of_moles = (pressure *volume ) / (self.gas_constant_r*temperature)
+        number_of_moles = self.calculate_amount_of_moles_n(pressure, temperature, volume)
         density = number_of_moles*self.molar_mass_m / volume
         return density
