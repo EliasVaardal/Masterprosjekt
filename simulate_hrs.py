@@ -13,17 +13,6 @@ class GenerateFlowData:
     This class contains methods for generating flowrates similar to those seen in
     a HRS.
     """
-    def __init__(self):
-        """
-        Initialize a new GenerateFlowData instance, allowing for access to simulation
-        methods.
-        """
-        #TODO: Er alle disse nødvendige her.
-        self.max_flow_rate_kg_hr = 216   # 3.6*60 = 216
-        self.max_flow_rate_kg_min = 3.6 # SAE J2601 definerer maks som 3.6kg/min.
-        self.max_flow_rate_g_s = 60 #SAE J2601 60 g /s
-
-
     def generate_flowrate_grams_seconds(self, vehicle_tank_size_kg=5):
         """
         This method generates flow rates similar to those seen in a HRS, in the
@@ -40,7 +29,7 @@ class GenerateFlowData:
         """
         maximum_flowrate_g_s = 60 # g / s, 3.6*1000/60
         maximum_mass = vehicle_tank_size_kg*1000# grams
-        flowrate_increments = 2
+        flowrate_increments = 1
         mass_delivered = 0
         flowrate = 0
         flowrates = []
@@ -53,15 +42,6 @@ class GenerateFlowData:
 
             flowrates.append(flowrate)
             mass_delivered += flowrate
-
-            # Justincase loopbreakr.
-            #if flowrate == 0:
-            #    break
-
-        #for second, rate in enumerate(flowrates, 1):  # second starter fra 1
-        #    print(f"Sekund {second}: Vektningsrate {rate} g/s")
-
-        #print(f"Total masse dispensert: {mass_delivered} g")
         return flowrates
 
     def generate_flowrate_kg_min(self, vehicle_tank_size_kg=6):
@@ -74,7 +54,6 @@ class GenerateFlowData:
         maximum_flowrate_kg_min = 3.6 # g / s, 3.6*1000/60
         max_mass = vehicle_tank_size_kg # grams
         flowrate_increments = 0.1
-        flowrate_decrements = 0.6  # Reduksjon av flowrate per sekund under nedgang
         mass_delivered = 0
         flowrate = 0
         decline = False
@@ -86,25 +65,9 @@ class GenerateFlowData:
                 flowrate += flowrate_increments
                 flowrate = min(flowrate, maximum_flowrate_kg_min)
 
-            # Sjekker etter start til nedgangsfase
-            if not decline and max_mass - mass_delivered - flowrate <= maximum_flowrate_kg_min*2:
-                decline = True
-
-            # Om nedgangsfase, reduserer flowrate, og unngå negativ flowrate.
-            if decline:
-                flowrate = max(flowrate - flowrate_decrements, 0)
-
             flowrates.append(flowrate)
             mass_delivered += flowrate
 
-            # Justincase loopbreakr.
-            if flowrate == 0:
-                break
-
-        #for second, rate in enumerate(flowrates, 1):  # second starter fra 1
-        #    print(f"Sekund {second}: Vektningsrate {rate} g/s")
-
-        #print(f"Total masse dispensert: {mass_delivered} g")
         return flowrates
 
 def test_simulation():

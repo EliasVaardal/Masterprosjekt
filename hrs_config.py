@@ -43,6 +43,9 @@ class HRSConfiguration:
         self.pressure_sensor_uncertainty = None
         self.temperature_sensor_uncertainty = None
 
+        self.current_simulation_g_s= None
+        self.current_simulation_kg_min = None
+
     def get_dead_volume_size(self):
         """Return the size of the dead volume."""
         return self.dead_volume

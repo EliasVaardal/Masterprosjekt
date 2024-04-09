@@ -17,6 +17,7 @@ import math
 import numpy as np
 from hrs_config import HRSConfiguration
 from flow_calculations import FlowProperties
+from correction import  Correction
 
 
 class UncertaintyTools:
@@ -24,16 +25,18 @@ class UncertaintyTools:
     A class containing methods for uncertainty calculation and manipulation.
     """
 
-    def __init__(self, hrs_config: HRSConfiguration):
+    def __init__(self, hrs_config: HRSConfiguration, correction : Correction):
         """
         Initialize UncertaintyTools object.
         """
         self.flow_properties = FlowProperties()
+        self.correcter = correction
         self.hrs_config = hrs_config
         self.k = 2
         self.std_uncertainty_zo_m_factor = 0.0261
+        self.flowrates_in_g_s = True
 
-    def convert_std_to_confidence(self, std_uncertainty):
+    def convert_std_to_confidence(self, std_uncertainty, k):
         """
         Converts standard uncertainty to confidence interval based on coverage factor 'k'.
 
@@ -49,7 +52,7 @@ class UncertaintyTools:
 
         if std_uncertainty <= 0:
             raise ValueError("Standard uncertainty must be a positive number.")
-        return self.k * std_uncertainty
+        return k * std_uncertainty
 
     def linear_interpolation(self, flowrate, uncertainty):
         """
@@ -210,7 +213,8 @@ class UncertaintyTools:
         """
         return math.sqrt((uqm / qm) ** 2 + (uz0m / z0m) ** 2) * qvo
 
-    def calculate_relative_uncertainty(self, flowrate):
+
+    def calculate_absolute_uncertainty_flowrate(self, flowrate):
         """
         Calculate the relative uncertainty of the flowrate measurement.
 
@@ -241,11 +245,45 @@ class UncertaintyTools:
             field_condition,
             field_repeatability,
         )
-        return self.convert_std_to_confidence(var)
+        return var #TODO: Gjør var funksjonen det den skal?
+
+
+    def calculate_relative_uncertainty_95(self, flowrate):
+        """
+        Calculate the relative uncertainty of the flowrate measurement.
+
+        This method calculates the relative uncertainty of the flowrate measurement based on
+        the provided flowrate value. It retrieves interpolated uncertainties for calibration
+        deviation, calibration repeatability, calibration reference, field repeatability,
+        and field condition, and then calculates the sum of variances using these uncertainties.
+
+        Args:
+            flowrate (float): The flowrate for which to calculate the relative uncertainty.
+
+        Returns:
+            float: The relative uncertainty of the flowrate measurement.
+        """
+        k = 2
+        if flowrate == 0:
+            return 0
+
+        calibration_deviation = self.get_calibration_deviation_std(flowrate) / flowrate
+        calibration_repeatability = self.get_calibration_repeatability_std(flowrate) /  flowrate
+        calibration_reference = self.get_calibration_reference_std(flowrate) /  flowrate
+        field_repeatability = self.get_field_repeatability_std(flowrate) /  flowrate
+        field_condition = self.get_field_condition_std(flowrate) /  flowrate
+
+        var = self.calculate_sum_variance(
+            calibration_deviation,
+            calibration_repeatability,
+            calibration_reference,
+            field_condition,
+            field_repeatability,
+        )
+        return self.convert_std_to_confidence(var, k)
     
     def calculate_density_uncertainty(self, current_pressure, current_temperature):
         """
-        ..Absolutt?
         Calculates the density uncertainty based off: (n * m) / V, where n is the ideal
         gas law. Utilizes propagation of uncertainty and partial derivation to reach
         the uncetainty.
@@ -293,10 +331,13 @@ class UncertaintyTools:
         dm_dp = (vent_volume*density_uncertainty)**2
         dm_dv = (density* vent_uncertainty)**2
         return math.sqrt(dm_dp+ dm_dv)
-
-
-# def run():
-# uncertainty = UncertaintyTools().calculate_relative_uncertainty(flowrate)
-# print(uncertainty)
-# unc = UncertaintyTools()
-# unc.gather_data()
+    
+    def calculate_total_relative_system_uncertainty_confidence(self, mass_delivered, uncertainties, final_filling_pressure, final_filling_temperature, k):
+        #TODO: Skal det være ukorregert eller levert masse?
+        cfm_uncertainty = self.total_combined_uncertainty(100, uncertainties) #TODO:  Dinna funksjonen må være feil
+        depress_vent_uncertainty = self.calculate_depress_uncertainty(final_filling_pressure, final_filling_temperature)
+        dead_volume_uncertainty = 0.1 # TODO : lag dinna.
+        print(f"CFM uncertainty: {cfm_uncertainty}    Depressurized vent uncertainty: {depress_vent_uncertainty}      Dead volume uncertainty: {dead_volume_uncertainty}")
+        rel_unc = self.calculate_sum_variance(cfm_uncertainty/mass_delivered, depress_vent_uncertainty/mass_delivered, dead_volume_uncertainty/mass_delivered)
+        expanded_relative_uncertainty = self.convert_std_to_confidence(rel_unc, k)
+        return expanded_relative_uncertainty
