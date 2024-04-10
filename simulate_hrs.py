@@ -29,7 +29,7 @@ class GenerateFlowData:
         """
         maximum_flowrate_g_s = 60 # g / s, 3.6*1000/60
         maximum_mass = vehicle_tank_size_kg*1000# grams
-        flowrate_increments = 1
+        flowrate_increments = 0.4
         mass_delivered = 0
         flowrate = 0
         flowrates = []
@@ -44,7 +44,9 @@ class GenerateFlowData:
             mass_delivered += flowrate
         return flowrates
 
-    def generate_flowrate_kg_min(self, vehicle_tank_size_kg=6):
+#TODO: Lag en simulasjon for temp og trykk.
+
+    def generate_flowrate_kg_min(self, vehicle_tank_size_kg=5):
         """
         Work in progress.
         This method generates flow rates similar to those seen in a HRS, in the
@@ -53,21 +55,47 @@ class GenerateFlowData:
         """
         maximum_flowrate_kg_min = 3.6 # g / s, 3.6*1000/60
         max_mass = vehicle_tank_size_kg # grams
-        flowrate_increments = 0.1
+        flowrate_increments = 3.6/120
         mass_delivered = 0
         flowrate = 0
-        decline = False
         flowrates = []
 
         while mass_delivered < max_mass:
+            print(flowrate)
             # Øk flowrate til maksimum er nådd
-            if not decline and flowrate < maximum_flowrate_kg_min:
+            if flowrate < maximum_flowrate_kg_min:
                 flowrate += flowrate_increments
                 flowrate = min(flowrate, maximum_flowrate_kg_min)
 
             flowrates.append(flowrate)
             mass_delivered += flowrate
+        print(f"Mass delivered {mass_delivered}")
+        return flowrates
 
+    def generate_flowrate_kg_sec(self, vehicle_tank_size_kg=5):
+        """
+        Work in progress.
+        This method generates flow rates similar to those seen in a HRS, in the
+        form of kg/second. It has 3 stages, increase, mass_flowrate_top, and 
+        decline.  
+        """
+        maximum_flowrate_kg_s = 60/1000 # 60 (g/s) / 1000 = kg/s
+        max_mass = vehicle_tank_size_kg # grams
+        flowrate_increments = (60/1000)/120
+        mass_delivered = 0
+        flowrate = 0
+        flowrates = []
+
+        while mass_delivered < max_mass:
+            #print(flowrate)
+            # Øk flowrate til maksimum er nådd
+            if flowrate < maximum_flowrate_kg_s:
+                flowrate += flowrate_increments
+                flowrate = min(flowrate, maximum_flowrate_kg_s)
+
+            flowrates.append(flowrate)
+            mass_delivered += flowrate
+        #print(f"Mass delivered: {mass_delivered}")
         return flowrates
 
 def test_simulation():
@@ -82,8 +110,8 @@ def test_simulation():
         None
     """
     simulator = GenerateFlowData()
-    flowrates = simulator.generate_flowrate_grams_seconds()
+    flowrates = simulator.generate_flowrate_kg_sec()
     for second, rate in enumerate(flowrates, 1):  # second starter fra 1
-        print(f"Sekund {second}: Vektningsrate {rate} g/s")
+        print(f"Sekund {second}: Vektningsrate {rate} kg/s")
 
 #test_simulation()

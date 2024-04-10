@@ -16,16 +16,16 @@ class CollectData:
     """
 
     def __init__(self, hrs_configs: HRSConfiguration, filepath):
-        #pylint: disable = W1401
+        # pylint: disable = W1401
         """
         Creating an instance of the CollectData class requires the hrs_configuration
-        and filepath. This is to setup the link between the Excel template and the 
+        and filepath. This is to setup the link between the Excel template and the
         program, and effectively store the data directly to the HRS configuration.
 
         Parameters:
             - hrs_config: An instance of the HRS configuration class
             - filepath: The path to the Excel template.
-        
+
         Tips:
             To easily find the correct filepath, find the template in its folder,
             shift+right click and copy path. The filepath will be given by either:
@@ -87,7 +87,7 @@ class CollectData:
         table3_specific_cells = df.iloc[[10, 11], [7]].astype(float)
         self.sensor_data = table3_specific_cells.to_dict(orient="index")
 
-        #print(self.sensor_data)
+        # print(self.sensor_data)
 
     def gather_data_config(self):
         """
@@ -121,7 +121,7 @@ class CollectData:
 
         # Table 2 configuration
         self.hrs_config.dead_volume = self.volume_data[5]["Unnamed: 7"]  # H7
-        self.hrs_config.dead_volume_size_uncertainty = self.volume_data[5][
+        self.hrs_config.dead_volume_uncertainty = self.volume_data[5][
             "Unnamed: 9"
         ]  # J7
         self.hrs_config.depressurization_vent_volume = self.volume_data[6][
@@ -130,22 +130,23 @@ class CollectData:
         self.hrs_config.depressurization_vent_volume_uncertainty = self.volume_data[6][
             "Unnamed: 9"
         ]  # J8
-        
-        # Table 3 uncertainty
-        self.hrs_config.temperature_sensor_uncertainty = self.sensor_data[10]["Unnamed: 7"]
-        self.hrs_config.pressure_sensor_uncertainty = self.sensor_data[11]["Unnamed: 7"]        
 
+        # Table 3 uncertainty
+        self.hrs_config.temperature_sensor_uncertainty = self.sensor_data[10][
+            "Unnamed: 7"
+        ]
+        self.hrs_config.pressure_sensor_uncertainty = self.sensor_data[11]["Unnamed: 7"]
 
     def set_hrs_uncertainty(self):
         """
         Based on the decisions made in the Excel template, previously gathered,
         it either sets the uncertainty related to the meter to a single value,
-        or as a list of flowrates, which will later be used for linear 
-        interpolation. 
+        or as a list of flowrates, which will later be used for linear
+        interpolation.
 
         Parameters:
             - None
-        
+
         Returns:
             - None
         """
@@ -177,9 +178,9 @@ class CollectData:
                 "Calibration Repeatability u(cal,rept)"
             ]
         else:
-            self.hrs_config.calibration_repeatability_std = self.single_meter_uncertainties[
-                7
-            ]
+            self.hrs_config.calibration_repeatability_std = (
+                self.single_meter_uncertainties[7]
+            )
 
         # Field repeatability# # # # #
         if self.convert_decision_to_bool(self.config_data, 8):
@@ -201,11 +202,11 @@ class CollectData:
         """
         The Excel file contains decisions which are set as YES or NO. This
         acesses a dictionary of YES or NO, and based on its index converts
-        YES to boolean: True and No to boolean: False. 
+        YES to boolean: True and No to boolean: False.
 
-        Parameters: 
-            - my_dict: Dictionary containing either YES or NO. 
-            - index: the index to check for in the dict. 
+        Parameters:
+            - my_dict: Dictionary containing either YES or NO.
+            - index: the index to check for in the dict.
         """
         if my_dict[index] == "YES":
             return True

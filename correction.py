@@ -23,20 +23,22 @@ class Correction:
 
         # Pipe variables
 
-        self.pressure_initial = 700  # bar
-        self.temperature_initial = 233.15  # Kelvin
+        self.pre_fill_pressure = 35000000  # TODO: pascal
+        #self.pressure_initial = 700  # bar
+        self.pre_fill_temp = 233.15  # Kelvin
         # Subsequent values
-        self.pressure_subsequent = 350  # bar
-        self.temperature_subsequent = 233.15  # kelvin
+        self.post_fill_pressure = 70000000  # pascal
+        #self.pressure_subsequent = 350  # bar
+        self.post_fill_temp = 273.15  # kelvin
 
     def calculate_vented_mass(self, volume_vent, density):
         """
         Calculates the mass of hydrogen lost due to depressurization of the dispenser hose.
         Parameters:
-            - v_vv = volume of piping containing vent gas
-            - p_2 = hydrogen density at end of filling
+            - v_vv = volume of piping containing vent gas [m3]
+            - p_2 = hydrogen density at end of filling [kg/m3]
         Returns:
-            - density of hydrogen at the end of current fueling
+            - density of hydrogen at the end of current fueling [kg]
         """
         m_vv = volume_vent * density
         return m_vv
@@ -46,47 +48,67 @@ class Correction:
         Calculates dead volume based off (IMEKO,2022).
 
         Parameters:
-            - Previous density calculated by hydrogen density equation
-            - Current density calculated by hydrogen density equation
+            - Previous density calculated by hydrogen density equation [kg/m3].
+            - Current density calculated by hydrogen density equation [kg / m3].
 
         Returns:
-            - Dead volume to be substracted from mass delivered total.
+            - Dead volume to be substracted from mass delivered total [kg].
         """
-        dead_volume_mass = self.hrs_config.dead_volume*(current_density - previous_density)
+        dead_volume_mass = self.hrs_config.get_dead_volume() * (
+            current_density - previous_density
+        )
         return dead_volume_mass
 
-    def check_correction(self, total_mass_delivered, dead_volume):
+    def check_correction(self, pre_fill_pressure, post_fill_pressure):
         """
         A testing method to test if the actual correction is done correctly,
-        only looking at previous and current pressure. 
+        only looking at previous and current pressure.
 
         Will probably be removed.
         """
-        if self.pressure_initial < self.pressure_subsequent:
+        if pre_fill_pressure < post_fill_pressure:
             print("The customer should recieve less hydrogen than ordered.")
-        if self.pressure_subsequent < self.pressure_initial:
+        if post_fill_pressure < pre_fill_pressure:
             print("The customer should get more hydrogen than ordered.")
-        print(f"Total mass delivered (uncorrected): {total_mass_delivered} kg")
-        print(
-            f"Total mass delivered (corrected): {total_mass_delivered - dead_volume} kg"
-        )
 
-    def calculate_total_correction_error(self, pressure_initial, temperature_initial, pressure_subsequent, temperature_subsequent):
+    def calculate_total_correction_error(
+        self,
+        pressure_initial,
+        temperature_initial,
+        pressure_subsequent,
+        temperature_subsequent,
+    ):
         """
-        Calculates the total correction error from dead volume and depressurized vent. 
+        Calculates the total correction error from dead volume and depressurized vent.
 
         Parameters:
-            - Initial_pressure : Pressure from previous filling [bar]
+            - Initial_pressure : Pressure from previous filling [Pa]
             - Inital_temperature : Temperature from previous filling [Kelvin] #TODO??
-            - Subsequent_pressure : Pressure at the end of current filling [bar]
-            - Subsequent_temperature : Temperature at the end of current filling [Kelvin] #TODO??      
+            - Subsequent_pressure : Pressure at the end of current filling [Pa]
+            - Subsequent_temperature : Temperature at the end of current filling [Kelvin] #TODO??
         """
-        initial_density_dead_volume = self.flow_properties.calculate_hydrogen_density(pressure_initial, temperature_initial, self.hrs_config.dead_volume) # Return kg/m3 
-        subsequent_density_dead_volume = self.flow_properties.calculate_hydrogen_density(pressure_subsequent, temperature_subsequent, self.hrs_config.dead_volume) # Returns kg/m3
-        dead_volume = self.calculate_change_in_dead_volume_mass(subsequent_density_dead_volume, initial_density_dead_volume)*1000 # Returns kg, convers to grams #TODO
+        dead_volume = self.hrs_config.get_dead_volume()
+        depressurization_vent_volume = self.hrs_config.get_depressurization_vent_volume()
+        initial_density_dead_volume = self.flow_properties.calculate_hydrogen_density(
+            pressure_initial, temperature_initial, dead_volume
+        )
+        subsequent_density_dead_volume = (
+            self.flow_properties.calculate_hydrogen_density(
+                pressure_subsequent, temperature_subsequent, dead_volume
+            )
+        )
 
-        density_vent = self.flow_properties.calculate_hydrogen_density(pressure_subsequent, temperature_subsequent, self.hrs_config.depressurization_vent_volume) #Returns kg/m3
-        vented_mass = self.calculate_vented_mass(self.hrs_config.depressurization_vent_volume, density_vent)*1000 #Returns kg, convert to grams.
-
-        total_error = dead_volume + vented_mass
+        dead_volume_mass = self.calculate_change_in_dead_volume_mass(
+            initial_density_dead_volume, subsequent_density_dead_volume
+        )
+        density_vent = self.flow_properties.calculate_hydrogen_density(
+            pressure_subsequent,
+            temperature_subsequent,
+           depressurization_vent_volume,
+        )  # Returns kg/m3
+        vented_mass = self.calculate_vented_mass(
+        depressurization_vent_volume, density_vent
+        )  # Returns kg, convert to grams.
+        print(f"Dead volume mass {dead_volume_mass} Vented mass: {vented_mass}")
+        total_error = dead_volume_mass + vented_mass
         return total_error

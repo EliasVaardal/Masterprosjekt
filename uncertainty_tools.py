@@ -17,7 +17,7 @@ import math
 import numpy as np
 from hrs_config import HRSConfiguration
 from flow_calculations import FlowProperties
-from correction import  Correction
+from correction import Correction
 
 
 class UncertaintyTools:
@@ -25,7 +25,7 @@ class UncertaintyTools:
     A class containing methods for uncertainty calculation and manipulation.
     """
 
-    def __init__(self, hrs_config: HRSConfiguration, correction : Correction):
+    def __init__(self, hrs_config: HRSConfiguration, correction: Correction):
         """
         Initialize UncertaintyTools object.
         """
@@ -175,13 +175,15 @@ class UncertaintyTools:
             float: The interpolated calibration repeatability standard uncertainty.
         """
         if self.hrs_config.multiple_calibration_repeatability_bool:
+            #cal_rep = self.linear_interpolation(flowrate, self.hrs_config.get_calibration_repeatability())
+            #print(f"Cal_rep: {cal_rep} Flowrate: {flowrate}")
             return self.linear_interpolation(
                 flowrate, self.hrs_config.get_calibration_repeatability()
             )
         else:
             return self.hrs_config.get_calibration_repeatability()
 
-    def total_combined_uncertainty(self, time_increments, uncertaintyarray):
+    def total_combined_uncertainty(self, uncertaintyarray):
         """
         Calculate the total combined uncertainty.
 
@@ -195,7 +197,14 @@ class UncertaintyTools:
         Returns:
             float: The total combined uncertainty.
         """
-        return sum(uncertainty * time_increments for uncertainty in uncertaintyarray)
+        #TODO: Teller dette som delta t? Uncertaintyarray holder usikkerhet per flowrate,
+        #sjekket per sekund. Dermed vil delta t, tidsintervallet mellom hver måling, være 
+        #1/antall målinger..?
+        uncertainty_mass = 0
+        delta_t = 1/(len(uncertaintyarray))
+        for uncertainty in uncertaintyarray:
+            uncertainty_mass += uncertainty*delta_t
+        return uncertainty_mass
 
     def calculate_std_vol_flowrate_uncertainty(self, qvo, qm, uqm, z0m, uz0m):
         """
@@ -211,10 +220,10 @@ class UncertaintyTools:
         Returns:
             float: The standard uncertainty of the volumetric flow rate.
         """
+        #TODO: trenge implementasjon
         return math.sqrt((uqm / qm) ** 2 + (uz0m / z0m) ** 2) * qvo
 
-
-    def calculate_absolute_uncertainty_flowrate(self, flowrate):
+    def calculate_absolute_std_uncertainty_cfm(self, flowrate):
         """
         Calculate the relative uncertainty of the flowrate measurement.
 
@@ -245,8 +254,7 @@ class UncertaintyTools:
             field_condition,
             field_repeatability,
         )
-        return var #TODO: Gjør var funksjonen det den skal?
-
+        return var  # TODO: Gjør var funksjonen det den skal?
 
     def calculate_relative_uncertainty_95(self, flowrate):
         """
@@ -256,6 +264,7 @@ class UncertaintyTools:
         the provided flowrate value. It retrieves interpolated uncertainties for calibration
         deviation, calibration repeatability, calibration reference, field repeatability,
         and field condition, and then calculates the sum of variances using these uncertainties.
+        Based on NFOGM gas metering handbook.
 
         Args:
             flowrate (float): The flowrate for which to calculate the relative uncertainty.
@@ -268,12 +277,14 @@ class UncertaintyTools:
             return 0
 
         calibration_deviation = self.get_calibration_deviation_std(flowrate) / flowrate
-        calibration_repeatability = self.get_calibration_repeatability_std(flowrate) /  flowrate
-        calibration_reference = self.get_calibration_reference_std(flowrate) /  flowrate
-        field_repeatability = self.get_field_repeatability_std(flowrate) /  flowrate
-        field_condition = self.get_field_condition_std(flowrate) /  flowrate
+        calibration_repeatability = (
+            self.get_calibration_repeatability_std(flowrate) / flowrate
+        )
+        calibration_reference = self.get_calibration_reference_std(flowrate) / flowrate
+        field_repeatability = self.get_field_repeatability_std(flowrate) / flowrate
+        field_condition = self.get_field_condition_std(flowrate) / flowrate
 
-        var = self.calculate_sum_variance(
+        var = self.calculate_sum_variance( #TODO: Dobbeltsjekk at dinna funka som den skal.
             calibration_deviation,
             calibration_repeatability,
             calibration_reference,
@@ -281,8 +292,8 @@ class UncertaintyTools:
             field_repeatability,
         )
         return self.convert_std_to_confidence(var, k)
-    
-    def calculate_density_uncertainty(self, current_pressure, current_temperature):
+
+    def calculate_density_absolute_uncertainty_std(self, pressure, temperature, volume, volume_uncertainty):
         """
         Calculates the density uncertainty based off: (n * m) / V, where n is the ideal
         gas law. Utilizes propagation of uncertainty and partial derivation to reach
@@ -291,29 +302,42 @@ class UncertaintyTools:
         Parameters:
             - Pressure
             - Temperature
-        
+
         Returns:
             - Density uncertainty
         """
-        uncertainty_pressure = self.hrs_config.pressure_sensor_uncertainty
-        uncertainty_temperature = self.hrs_config.temperature_sensor_uncertainty
-        vent_volume = self.hrs_config.depressurization_vent_volume
-        vent_uncertainty = self.hrs_config.depressurization_vent_volume_uncertainty
-        dn_dp = (vent_volume/(self.flow_properties.gas_constant_r*current_temperature))*uncertainty_pressure**2
-        dn_dv = (current_pressure/(self.flow_properties.gas_constant_r*current_temperature))*vent_uncertainty**2
-        dn_dt = (current_pressure*vent_volume/(self.flow_properties.gas_constant_r*current_temperature**2))*uncertainty_temperature**2
-        uncertainty_n = math.sqrt(dn_dp+dn_dv+dn_dt)
+        uncertainty_pressure = self.hrs_config.get_pressure_uncertainty()
+        uncertainty_temperature = self.hrs_config.get_temperature_uncertainty()
+        #print(f"u(T): {uncertainty_temperature} u(P): {uncertainty_pressure}")
 
+        dn_dp = (
+            volume / (self.flow_properties.gas_constant_r * temperature)
+        )
+        dn_dv = (
+            pressure
+            / (self.flow_properties.gas_constant_r * temperature)
+        )
+        dn_dt = (
+            pressure
+            * volume
+            / (self.flow_properties.gas_constant_r * temperature**2)
+        )
+        uncertainty_n = self.calculate_sum_variance((dn_dp*uncertainty_pressure), (dn_dv*volume_uncertainty),(dn_dt*uncertainty_temperature))
+        
         # Finner så usikkerheten til tetthet. dp_dm er 0, siden usikkerheten til den er nær null.?
-        n = (current_pressure * vent_volume ) / (self.flow_properties.gas_constant_r*current_temperature)
-        dp_dn = (self.flow_properties.molar_mass_m / vent_volume)*uncertainty_n**2
-        dp_dv = (self.flow_properties.molar_mass_m*n/(vent_volume**2))**2
-        return math.sqrt(dp_dn+dp_dv)
-    
-    def calculate_depress_uncertainty(self, pressure, temperature):
+        n = (pressure * volume) / (
+            self.flow_properties.gas_constant_r * temperature
+        )
+        dp_dn = (self.flow_properties.molar_mass_m / volume)
+        dp_dv = (self.flow_properties.molar_mass_m * n / (volume**2))
+        return self.calculate_sum_variance((dp_dn*uncertainty_n),(dp_dv*volume_uncertainty))
+
+    def calculate_depress_absolute_uncertainty(self, pressure, temperature):
         """
         Calculates the uncertainty of the depressurization. The mass depressurized
-        is vented to the environment, and is consecutively given as M = p*V
+        is vented to the environment, and is consecutively given as M = p*V.
+        The uncertainty calculation is found by utilizing error propagation by
+        partial derivation. 
 
         Parameters:
             - Pressure
@@ -323,21 +347,64 @@ class UncertaintyTools:
             - Uncertainty of the mass depressurized
         """
 
-        vent_volume = self.hrs_config.depressurization_vent_volume
-        vent_uncertainty = self.hrs_config.depressurization_vent_volume_uncertainty
-        density = self.flow_properties.calculate_hydrogen_density(pressure, temperature, vent_volume)
-        density_uncertainty = self.calculate_density_uncertainty(pressure, temperature)
+        vent_volume = self.hrs_config.get_depressurization_vent_volume()
+        vent_uncertainty = self.hrs_config.get_depressurization_vent_volume_unc()
+        density = self.flow_properties.calculate_hydrogen_density(
+            pressure, temperature, vent_volume
+        )
+        density_uncertainty = self.calculate_density_absolute_uncertainty_std(pressure, temperature, vent_volume, vent_uncertainty)
 
-        dm_dp = (vent_volume*density_uncertainty)**2
-        dm_dv = (density* vent_uncertainty)**2
-        return math.sqrt(dm_dp+ dm_dv)
+        dm_dp = (vent_volume)
+        dm_dv = (density)
+        return self.calculate_sum_variance((dm_dp * density_uncertainty),(dm_dv*vent_uncertainty))
+
+    def calculate_total_meter_uncertainty_confidence(self, uncertainties, k):
+        cfm_unc = self.total_combined_uncertainty(uncertainties)
+        return cfm_unc
     
-    def calculate_total_relative_system_uncertainty_confidence(self, mass_delivered, uncertainties, final_filling_pressure, final_filling_temperature, k):
-        #TODO: Skal det være ukorregert eller levert masse?
-        cfm_uncertainty = self.total_combined_uncertainty(100, uncertainties) #TODO:  Dinna funksjonen må være feil
-        depress_vent_uncertainty = self.calculate_depress_uncertainty(final_filling_pressure, final_filling_temperature)
-        dead_volume_uncertainty = 0.1 # TODO : lag dinna.
-        print(f"CFM uncertainty: {cfm_uncertainty}    Depressurized vent uncertainty: {depress_vent_uncertainty}      Dead volume uncertainty: {dead_volume_uncertainty}")
-        rel_unc = self.calculate_sum_variance(cfm_uncertainty/mass_delivered, depress_vent_uncertainty/mass_delivered, dead_volume_uncertainty/mass_delivered)
+    def caclulate_dead_volume_uncertainty_absolute(self, pressure2, pressure1, temperature2, temperature1):
+        """
+        Calculates the uncertainty related to uncertainty, based on partial derivation and error
+        propagation.
+        """
+        dead_volume = self.hrs_config.get_dead_volume()
+        dead_volume_unc = self.hrs_config.get_dead_volume_uncertainty()
+
+        prev_density = self.flow_properties.calculate_hydrogen_density(pressure1, temperature1, dead_volume)
+        current_density = self.flow_properties.calculate_hydrogen_density(pressure2, temperature2, dead_volume)
+        prev_density_unc = self.calculate_density_absolute_uncertainty_std(pressure1, temperature1, dead_volume, dead_volume_unc)
+        current_density_unc = self.calculate_density_absolute_uncertainty_std(pressure2, temperature2, dead_volume, dead_volume_unc)
+
+        dm_dv = (current_density - prev_density)
+        dm_p2 = (dead_volume)
+        dm_p1 = (dead_volume)
+        return self.calculate_sum_variance((dm_dv*dead_volume_unc), (dm_p1*prev_density_unc), (dm_p2*current_density_unc))
+
+    def calculate_total_system_relative_uncertainty_confidence(
+        self,
+        mass_delivered,
+        uncertainties,
+        prev_filling_pressure,
+        prev_filling_temperature,
+        final_filling_pressure,
+        final_filling_temperature,
+        k,
+    ):
+        # TODO: Skal det være ukorregert eller levert masse?
+        cfm_uncertainty = self.total_combined_uncertainty(
+            uncertainties
+        )
+        depress_vent_uncertainty = self.calculate_depress_absolute_uncertainty(
+            final_filling_pressure, final_filling_temperature
+        )
+        dead_volume_uncertainty = self.caclulate_dead_volume_uncertainty_absolute(final_filling_pressure, prev_filling_pressure, final_filling_temperature, prev_filling_temperature)
+        print(
+            f"CFM uncertainty: {cfm_uncertainty}    Depressurized vent uncertainty: {depress_vent_uncertainty}      Dead volume uncertainty: {dead_volume_uncertainty}"
+        )
+        rel_unc = self.calculate_sum_variance(
+            cfm_uncertainty / mass_delivered,
+            depress_vent_uncertainty / mass_delivered,
+            dead_volume_uncertainty / mass_delivered, #TODO: Skal ditta være mass_delivered eller nokke med mass_corrected.
+        )
         expanded_relative_uncertainty = self.convert_std_to_confidence(rel_unc, k)
         return expanded_relative_uncertainty

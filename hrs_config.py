@@ -28,7 +28,7 @@ class HRSConfiguration:
         # Table 2 volume and related uncertainties.
         self.dead_volume = None
         self.depressurization_vent_volume = None
-        self.dead_volume_size_uncertainty = None
+        self.dead_volume_uncertainty = None
         self.depressurization_vent_volume_uncertainty = None
 
         # Meter Uncertainties
@@ -46,13 +46,23 @@ class HRSConfiguration:
         self.current_simulation_g_s= None
         self.current_simulation_kg_min = None
 
-    def get_dead_volume_size(self):
-        """Return the size of the dead volume."""
-        return self.dead_volume
+    def get_dead_volume(self):
+        """The Excel template requires dm3 input, so the code converts dm3 to m3, and 
+        return the size of the dead volume [m3]."""
+        dead_volume_m3 = self.dead_volume / 1000
+        return dead_volume_m3
 
+    def get_dead_volume_uncertainty(self):
+        """Return the uncertainty of the dead volume."""
+        return self.dead_volume_uncertainty #TODO: Om det er en usikkerhet på 2% for dm3, vil usikkerheten være lik
+                                # for m3.
     def get_depressurization_vent_volume(self):
         """Return the volume of the depressurization vent."""
-        return self.depressurization_vent_volume
+        depressurization_vent_volume_m3 = self.depressurization_vent_volume / 1000
+        return depressurization_vent_volume_m3
+    
+    def get_depressurization_vent_volume_unc(self):
+        return self.depressurization_vent_volume_uncertainty
 
     def get_correct_for_dead_volume(self):
         """Return the correction status for the dead volume."""
@@ -81,3 +91,11 @@ class HRSConfiguration:
     def get_field_condition(self):
         """Return the standard deviation for field conditions."""
         return self.field_condition_std
+    
+    def get_pressure_uncertainty(self):
+        """Returns the standard deviation for the pressure sensors uncertainty"""
+        return self.pressure_sensor_uncertainty
+    
+    def get_temperature_uncertainty(self):
+        """Return the standard deviation for the temperature sensors uncertainty"""
+        return self.temperature_sensor_uncertainty
