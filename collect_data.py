@@ -75,7 +75,7 @@ class CollectData:
         table1_specific_cells = df.iloc[[2, 3, 5, 6, 7, 8, 9], 2]  # YES/NO
         self.config_data = table1_specific_cells.to_dict()
 
-        # Collect single valuescalibration and field uncertainties
+        # Collect single value calibration and field uncertainties
         table1_uncertainties = df.iloc[[5, 6, 7, 8, 9], 3].astype(float)
         self.single_meter_uncertainties = table1_uncertainties.to_dict()
 
@@ -152,7 +152,7 @@ class CollectData:
         """
         # TODO: Eventuelt - om g/s - bruk "Flowrate [g/s]".
         # få fram at flowratesa e ikkje fast bortsett fra høgste verdi.
-        self.hrs_config.flowrates_kg_min = self.calibration_data["Flowrate [kg/hr]"]
+        self.hrs_config.flowrates_kg_min = self.calibration_data["Flowrate [kg/min]"]
 
         # Calibration deviation correction
         if self.convert_decision_to_bool(self.config_data, 5):

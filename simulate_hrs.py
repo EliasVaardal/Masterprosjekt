@@ -81,7 +81,7 @@ class GenerateFlowData:
         """
         maximum_flowrate_kg_s = 60/1000 # 60 (g/s) / 1000 = kg/s
         max_mass = vehicle_tank_size_kg # grams
-        flowrate_increments = (60/1000)/120
+        flowrate_increments = (60/1000)/150
         mass_delivered = 0
         flowrate = 0
         flowrates = []
