@@ -33,7 +33,7 @@ class FlowProperties:
         self.h_sm = None
 
 
-    def calculate_std_vol_flowrate(self):
+    def calculate_std_vol_flowrate(self):#TODO: ummm
         """
         Calculates the standard volumetric flow rate.
         Args:
@@ -69,7 +69,7 @@ class FlowProperties:
             Calculated energy flowrate value []
         """
         return self.h_sm * self.q_m
-    
+
 
     def calculate_hydrogen_density(self, pressure, temperature, volume):
         """

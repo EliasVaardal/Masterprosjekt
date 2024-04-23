@@ -65,17 +65,13 @@ class RunProgram:
         for flowrate in flowrate_kgmin_per_second:  # For løkke med kg/min verdier.
             total_mass_delivered += flowrate / 60
             flowrate_reference = flowrate / 60  # TODO: Sjekk!
-            rel_uncertainty_95 = (
-                self.uncertainty_tools.calculate_relative_uncertainty_95(
-                    flowrate, flowrate_reference
-                )
+            rel_uncertainty_95 = self.uncertainty_tools.calculate_cfm_rel_unc_95(
+                flowrate, flowrate_reference
             )  # TODO: BLIR DITTA RETT?
-            uncertainty_std = (
-                self.uncertainty_tools.calculate_absolute_std_uncertainty_cfm(flowrate)
-            )
+            uncertainty_std = self.uncertainty_tools.calculate_cfm_abs_unc_std(flowrate)
 
             print(
-                f"Time: {timer} seconds - Flow rate: {np.around(flowrate, 2)} kg/min ± {np.around(rel_uncertainty_95, 2)}%"
+            f"Time: {timer} seconds - Flow rate: {np.around(flowrate, 2)} kg/min ± {np.around(rel_uncertainty_95, 2)}%"
             )
             uncertainties_95.append(rel_uncertainty_95)
             uncertainties_std.append(uncertainty_std)
@@ -130,45 +126,14 @@ class RunProgram:
         plt.legend()
         plt.show()
 
-    def plotpqqw(self, data_kg_sec, uncertainties_kg_sec_relative, time_intervals):
-        absolute_uncertainties_kg_min = (relative_uncertainties_percent / 100) * flow_rates_kg_min
-
-        # Plott flow rates med usikkerhetsstolper
-        plt.errorbar(
-            time_seconds,
-            flow_rates_kg_min,
-            yerr=absolute_uncertainties_kg_min,
-            fmt='o',
-            label='Flow rate with relative uncertainty',
-            capsize=5,
-            ecolor='red'
-        )
-
-        # For å fremheve den relative usikkerheten, kan du også plotte den direkte
-        plt.twinx()  # Opprett en annen y-akse for den relative usikkerheten
-        plt.plot(
-            time_seconds,
-            relative_uncertainties_percent,
-            label='Relative uncertainty (%)',
-            color='green'
-        )
-
-        plt.xlabel('Time (seconds)')
-        plt.ylabel('Flow rate (kg/min)')
-        plt.title('Flow Rate Simulation with Relative Uncertainty')
-        plt.grid(True)
-        plt.legend()
-        plt.show()
-
-
     def present_mass_data(
         self,
-        total_mass_delivered,
+        tot_mass_delivered,
         uncertainties_std,
-        prev_filling_pressure,
-        prev_filling_temperature,
-        final_filling_pressure,
-        final_filling_temperature,
+        pre_fill_press,
+        pre_fill_temp,
+        post_fill_press,
+        post_fill_temp,
         k,
     ):
         """
@@ -180,23 +145,24 @@ class RunProgram:
             self.correction.post_fill_pressure,
             self.correction.post_fill_temp,
         )
-        mass_corrected = total_mass_delivered - total_error
-        total_uncertainty_filling_95 = self.uncertainty_tools.calculate_total_system_relative_uncertainty_confidence(
-            mass_corrected,
-            uncertainties_std,
-            prev_filling_pressure,
-            prev_filling_temperature,
-            final_filling_pressure,
-            final_filling_temperature,
-            k,
-        )
-        print("Total mass delivered (before correction):", total_mass_delivered, "kg")
-        print(
-            f"Total mass delivered (after correction): {mass_corrected} ± {total_uncertainty_filling_95} %"
-        )
-        self.correction.check_correction(prev_filling_pressure, final_filling_pressure)
+        mass_corrected = tot_mass_delivered - total_error
 
-    ####################################################################################################
+        tot_fill_unc_95 = (
+            self.uncertainty_tools.calculate_total_system_rel_unc_95(
+                mass_corrected,
+                uncertainties_std,
+                pre_fill_press,
+                pre_fill_temp,
+                post_fill_press,
+                post_fill_temp,
+                k,
+            )
+        )
+        print("Total mass delivered (before correction):", tot_mass_delivered, "kg")
+        print(
+            f"Total mass delivered (after correction): {mass_corrected} ± {tot_fill_unc_95} %"
+        )
+        self.correction.check_correction(pre_fill_press, post_fill_press)
 
     def run_simulation_g_s(self):
         """
@@ -222,16 +188,15 @@ class RunProgram:
             # uncertainty = self.uncertainty_tools.calculate_relative_uncertainty_95(
             #    flowrate * 3.6
             # )
-            uncertainty_std = (
-                self.uncertainty_tools.calculate_absolute_std_uncertainty_cfm(
-                    flowrate * 3.6
-                )
+            uncertainty_std = self.uncertainty_tools.calculate_cfm_abs_unc_std(
+                flowrate * 3.6
             )
 
             # uncertainties_95.append(uncertainty)
             uncertainties_std.append(uncertainty_std)
             print(
-                #    f"Flow rate: {np.around(flowrate,2)} ± {np.around(uncertainty,2)}%  [g/s]  Total mass delivered: {total_mass_delivered}"
+                #    f"Flow rate: {np.around(flowrate,2)} ± {np.around(uncertainty,2)}%
+                #    [g/s]  Total mass delivered: {total_mass_delivered}"
             )
         self.present_mass_data(
             total_mass_delivered

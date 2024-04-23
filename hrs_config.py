@@ -47,7 +47,11 @@ class HRSConfiguration:
         self.current_simulation_g_s = None
         self.current_simulation_kg_min = None
 
-    def convert_relative_to_absolute(self, uncertainty, reference): #TODO: Sjekk at dinna formulaen e med i teksten.
+    def convert_relative_to_absolute(self, uncertainty, reference):
+        """
+        Crap
+        """
+        #TODO: Sjekk at dinna formulaen e med i teksten.
         absolute_uncertainty = (uncertainty/100)*reference
         return absolute_uncertainty#TODO: RETTTTTT????? nei????
 
@@ -66,7 +70,9 @@ class HRSConfiguration:
 
     def get_depressurization_vent_volume_unc(self):
         """Return the uncertainty of the volume of the depressurization vent."""
-        return self.convert_relative_to_absolute(self.depressurization_vent_volume_uncertainty, self.depressurization_vent_volume)
+        uncertainty = self.depressurization_vent_volume_uncertainty
+        reference =  self.depressurization_vent_volume
+        return self.convert_relative_to_absolute(uncertainty, reference)
 
     def get_correct_for_dead_volume(self):
         """Return the correction status for the dead volume."""
