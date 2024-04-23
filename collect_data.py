@@ -46,6 +46,12 @@ class CollectData:
         self.volume_data = None
         self.sensor_data = None
 
+        self.read_file()
+        self.set_table_1_config()
+        self.set_table_2_config()
+        self.set_table_3_config()
+        self.set_hrs_uncertainty()
+
     def read_file(self):
         """
         Reads an excel file, through the path given defined in __init__.
@@ -87,9 +93,26 @@ class CollectData:
         table3_specific_cells = df.iloc[[10, 11], [7]].astype(float)
         self.sensor_data = table3_specific_cells.to_dict(orient="index")
 
-        # print(self.sensor_data)
+    def convert_decision_to_bool(self, my_dict, index):
+        """
+        The Excel file contains decisions which are set as YES or NO. This
+        acesses a dictionary of YES or NO, and based on its index converts
+        YES to boolean: True and No to boolean: False.
 
-    def gather_data_config(self):
+        Parameters:
+            - my_dict: Dictionary containing either YES or NO.
+            - index: the index to check for in the dict.
+        """
+        if my_dict[index] == "YES":
+            return True
+        elif my_dict[index] == "NO":
+            return False
+        else:
+            raise ValueError(
+                "Decision value not recognized. Make sure it is (YES) or (NO)"
+            )
+
+    def set_table_1_config(self):
         """
         Method to be called after read_file(). This method convers the data stored
         in object parameters, directly to the already initialized hrs_configuration class.
@@ -117,9 +140,7 @@ class CollectData:
             self.config_data, 9
         )
 
-        self.set_hrs_uncertainty()
-
-        # Table 2 configuration
+    def set_table_2_config(self):
         self.hrs_config.dead_volume = self.volume_data[5]["Unnamed: 7"]  # H7
         self.hrs_config.dead_volume_uncertainty = self.volume_data[5][
             "Unnamed: 9"
@@ -131,11 +152,14 @@ class CollectData:
             "Unnamed: 9"
         ]  # J8
 
+
+    def set_table_3_config(self):
         # Table 3 uncertainty
         self.hrs_config.temperature_sensor_uncertainty = self.sensor_data[10][
             "Unnamed: 7"
         ]
         self.hrs_config.pressure_sensor_uncertainty = self.sensor_data[11]["Unnamed: 7"]
+
 
     def set_hrs_uncertainty(self):
         """
@@ -150,8 +174,6 @@ class CollectData:
         Returns:
             - None
         """
-        # TODO: Eventuelt - om g/s - bruk "Flowrate [g/s]".
-        # få fram at flowratesa e ikkje fast bortsett fra høgste verdi.
         self.hrs_config.flowrates_kg_min = self.calibration_data["Flowrate [kg/min]"]
 
         # Calibration deviation correction
@@ -198,24 +220,6 @@ class CollectData:
         else:
             self.hrs_config.field_condition_std = self.single_meter_uncertainties[9]
 
-    def convert_decision_to_bool(self, my_dict, index):
-        """
-        The Excel file contains decisions which are set as YES or NO. This
-        acesses a dictionary of YES or NO, and based on its index converts
-        YES to boolean: True and No to boolean: False.
-
-        Parameters:
-            - my_dict: Dictionary containing either YES or NO.
-            - index: the index to check for in the dict.
-        """
-        if my_dict[index] == "YES":
-            return True
-        elif my_dict[index] == "NO":
-            return False
-        else:
-            raise ValueError(
-                "Decision value not recognized. Ma ke sure it is (YES) or (NO)"
-            )
 
 
 # data_reader = CollectData()

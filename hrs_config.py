@@ -49,11 +49,14 @@ class HRSConfiguration:
 
     def convert_relative_to_absolute(self, uncertainty, reference):
         """
-        Crap
+        Converts relative uncertainty to absolte uncertainty.
+
+        Parameters: 
+            - Relative uncertainty
+            - Refere
         """
-        #TODO: Sjekk at dinna formulaen e med i teksten.
-        absolute_uncertainty = (uncertainty/100)*reference
-        return absolute_uncertainty#TODO: RETTTTTT????? nei????
+        absolute_uncertainty = (uncertainty / 100) * reference
+        return absolute_uncertainty
 
     def get_dead_volume(self):
         """The Excel template requires dm3 input, so the code converts dm3 to m3, and
@@ -62,7 +65,9 @@ class HRSConfiguration:
 
     def get_dead_volume_uncertainty(self):
         """Return the uncertainty of the dead volume."""
-        return self.convert_relative_to_absolute(self.dead_volume_uncertainty, self.dead_volume)
+        return self.convert_relative_to_absolute(
+            self.dead_volume_uncertainty, self.dead_volume
+        )
 
     def get_depressurization_vent_volume(self):
         """Return the volume of the depressurization vent."""
@@ -71,7 +76,7 @@ class HRSConfiguration:
     def get_depressurization_vent_volume_unc(self):
         """Return the uncertainty of the volume of the depressurization vent."""
         uncertainty = self.depressurization_vent_volume_uncertainty
-        reference =  self.depressurization_vent_volume
+        reference = self.depressurization_vent_volume
         return self.convert_relative_to_absolute(uncertainty, reference)
 
     def get_correct_for_dead_volume(self):
@@ -104,8 +109,12 @@ class HRSConfiguration:
 
     def get_pressure_uncertainty(self, pressure):
         """Returns the standard deviation for the pressure sensors uncertainty"""
-        return self.convert_relative_to_absolute(self.pressure_sensor_uncertainty, pressure)
+        return self.convert_relative_to_absolute(
+            self.pressure_sensor_uncertainty, pressure
+        )
 
     def get_temperature_uncertainty(self, temperature):
         """Return the standard deviation for the temperature sensors uncertainty"""
-        return self.convert_relative_to_absolute(self.pressure_sensor_uncertainty, temperature)
+        return self.convert_relative_to_absolute(
+            self.pressure_sensor_uncertainty, temperature
+        )

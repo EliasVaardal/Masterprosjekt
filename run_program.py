@@ -34,14 +34,12 @@ class RunProgram:
         As the RunProgram object is created, it sets in motion multiple classes, some which
         are used for parameters for others. Furthermore it reads data, and stores it in varaibles.
         """
-        self.file_path = r"C:\Users\Elias\Downloads\unc_calc_sheet_2.xlsx"
+        #self.file_path = r"C:\Users\Elias\Downloads\unc_calc_sheet_2.xlsx"
+        self.file_path = r"C:\Users\elias\OneDrive\Dokumenter\unc_calc_sheet.xlsx"
         self.hrs_config = HRSConfiguration()
         self.data_reader = CollectData(self.hrs_config, self.file_path)
-        self.data_reader.read_file()
-        self.data_reader.gather_data_config()
         self.correction = Correction(self.hrs_config)
         self.uncertainty_tools = UncertaintyTools(self.hrs_config, self.correction)
-
         self.simulator = GenerateFlowData()
 
         self.flowrates_g_s = None

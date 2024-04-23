@@ -93,13 +93,13 @@ class UncertaintyTools:
         Converts relative uncertainty to absolute uncertainty.
 
         Parameters:
-            - Relative uncertainty
-            - Reference measurement
+            - Relative uncertainty (%)
+            - Reference measurement (unit)
         
         Returns:
-            - Absolute uncertainty
+            - Absolute uncertainty (unit)
         """
-        absolute_uncertainty = uncertainty * reference#TODO: bdkn gfjewqnf oweangf ojwebgo jwb
+        absolute_uncertainty = (uncertainty / 100) * reference
         return absolute_uncertainty
 
     def get_field_condition_std(self, flowrate):
