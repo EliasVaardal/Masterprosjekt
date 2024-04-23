@@ -5,7 +5,7 @@ tables containing different types of data.
 """
 
 import pandas as pd
-
+import os
 from hrs_config import HRSConfiguration
 
 
@@ -15,7 +15,7 @@ class CollectData:
     the program and the user. It directly stores data into objects created outside this module.
     """
 
-    def __init__(self, hrs_configs: HRSConfiguration, filepath):
+    def __init__(self, hrs_configs: HRSConfiguration):
         # pylint: disable = W1401
         """
         Creating an instance of the CollectData class requires the hrs_configuration
@@ -33,7 +33,7 @@ class CollectData:
             "C:/Path/To/Your/Master_project_sheet.xlsx"
         """
         self.hrs_config = hrs_configs
-        self.file_path = filepath
+        self.file_path = self.get_filepath()
 
         self.config_sheet = "hrs_config"
         self.calibration_sheet = "Calibration_uncertainty"
@@ -51,6 +51,14 @@ class CollectData:
         self.set_table_2_config()
         self.set_table_3_config()
         self.set_hrs_uncertainty()
+
+    def get_filepath(self):
+        """
+        Returns the 
+        """
+        program_dir = os.path.dirname(os.path.abspath(__file__))
+        dynamic_file_path = os.path.join(program_dir, "excel_template", "configurationtemplate.xlsx")
+        return dynamic_file_path
 
     def read_file(self):
         """
