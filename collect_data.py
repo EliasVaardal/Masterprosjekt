@@ -3,9 +3,9 @@ This module contains the Collectdata class, which collects data from the user
 through the Excel sheet template. This is done in steps, as there are multiple
 tables containing different types of data.
 """
-
-import pandas as pd
 import os
+import openpyxl
+import pandas as pd
 from hrs_config import HRSConfiguration
 
 
@@ -38,6 +38,7 @@ class CollectData:
         self.config_sheet = "hrs_config"
         self.calibration_sheet = "Calibration_uncertainty"
         self.field_sheet = "Field_uncertainty"
+        self.write_sheet = "Write"
 
         self.single_meter_uncertainties = None
         self.calibration_data = None
@@ -51,6 +52,8 @@ class CollectData:
         self.set_table_2_config()
         self.set_table_3_config()
         self.set_hrs_uncertainty()
+        self.read_previous_pressure()
+        self.write_previous_pressure()
 
     def get_filepath(self):
         """
@@ -59,6 +62,24 @@ class CollectData:
         program_dir = os.path.dirname(os.path.abspath(__file__))
         dynamic_file_path = os.path.join(program_dir, "excel_template", "configurationtemplate.xlsx")
         return dynamic_file_path
+    
+    def write_previous_pressure(self, density=300):
+        excel_book = openpyxl.load_workbook(self.file_path)
+        sheet = excel_book["Write"]
+        sheet['C3'] = density
+        excel_book.save(self.file_path)
+
+
+    def read_previous_pressure(self):
+        """
+        Reads the previous pressure written by the previous program,
+        and stores it in the hrs_config class.
+        """
+        df = pd.read_excel(
+            self.file_path, sheet_name=self.write_sheet, header=1, index_col=0
+        )
+        self.hrs_config.previous_pressure = df.iloc[0, 1].astype(float)
+
 
     def read_file(self):
         """
@@ -75,22 +96,28 @@ class CollectData:
         # Collect multiple uncertainties calibration
         df = pd.read_excel(
             self.file_path, sheet_name=self.calibration_sheet, header=1, index_col=0
-        ).astype(float)
+        )
+        #print(df)
         self.calibration_data = df.to_dict(orient="List")
-
+        #print(f"Calib: {self.calibration_data}")
+        
         # Collect multiple uncertaintainties field.
         df = pd.read_excel(
             self.file_path, sheet_name=self.field_sheet, header=1, index_col=0
         ).astype(float)
+        #print(df)
         self.field_data = df.to_dict(orient="List")
 
         # Collect decisions
         df = pd.read_excel(self.file_path, sheet_name=self.config_sheet)
+        #print(df)
         table1_specific_cells = df.iloc[[2, 3, 5, 6, 7, 8, 9], 2]  # YES/NO
+        #print(table1_specific_cells)
         self.config_data = table1_specific_cells.to_dict()
 
         # Collect single value calibration and field uncertainties
         table1_uncertainties = df.iloc[[5, 6, 7, 8, 9], 3].astype(float)
+        #print(table1_uncertainties)
         self.single_meter_uncertainties = table1_uncertainties.to_dict()
 
         # Collect table 2 volumes and related uncertainties
@@ -183,12 +210,12 @@ class CollectData:
             - None
         """
         self.hrs_config.flowrates_kg_min = self.calibration_data["Flowrate [kg/min]"]
-
         # Calibration deviation correction
         if self.convert_decision_to_bool(self.config_data, 5):
             self.hrs_config.calibration_deviation_std = self.calibration_data[
-                "Calibration Deviation u(cal,dev)"
+                "Calibration Deviation u(cal,dev) [%]"
             ]
+            #print(self.hrs_config.calibration_deviation_std)
         else:
             self.hrs_config.calibration_deviation_std = self.single_meter_uncertainties[
                 5
@@ -196,7 +223,7 @@ class CollectData:
         # Calibration reference # # # # # # # #
         if self.convert_decision_to_bool(self.config_data, 6):
             self.hrs_config.calibraiton_reference_std = self.calibration_data[
-                "Calibration Reference u(cal,ref)"
+                "Calibration Reference u(cal,ref) [%]"
             ]
         else:
             self.hrs_config.calibraiton_reference_std = self.single_meter_uncertainties[
@@ -205,7 +232,7 @@ class CollectData:
         # Calibration repeatability # # # # # # # #
         if self.convert_decision_to_bool(self.config_data, 7):
             self.hrs_config.calibration_repeatability_std = self.calibration_data[
-                "Calibration Repeatability u(cal,rept)"
+                "Calibration Repeatability u(cal,rept) [%]"
             ]
         else:
             self.hrs_config.calibration_repeatability_std = (
@@ -215,7 +242,7 @@ class CollectData:
         # Field repeatability# # # # #
         if self.convert_decision_to_bool(self.config_data, 8):
             self.hrs_config.field_repeatability_std = self.field_data[
-                "Field Repeatability u(field,rept)"
+                "Field Repeatability u(field,rept) [%]"
             ]
         else:
             self.hrs_config.field_repeatability_std = self.single_meter_uncertainties[8]
@@ -223,13 +250,14 @@ class CollectData:
         # Field condition  # # # # # # # #
         if self.convert_decision_to_bool(self.config_data, 9):
             self.hrs_config.field_condition_std = self.field_data[
-                "Field Condition u(field,cond)"
+                "Field Condition u(field,cond) [%]"
             ]
         else:
             self.hrs_config.field_condition_std = self.single_meter_uncertainties[9]
 
 
-
-# data_reader = CollectData()
+hrs_config = HRSConfiguration()
+data_reader = CollectData(hrs_config)
+#print(vars(hrs_config))
 # data_reader.read_file()
 # self.execlfile = r"C:\Users\Elias\Downloads\Master_project_sheet.xlsx"

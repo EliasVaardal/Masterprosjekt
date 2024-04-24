@@ -157,6 +157,7 @@ class UncertaintyTools:
             )
         else:
             relative_uncertainty = self.hrs_config.get_calibration_deviation()
+        #print(f"relative_cal_dev uncertainty: {relative_uncertainty}")
         return self.convert_relative_to_absolute(relative_uncertainty, flowrate)
 
     def get_calibration_reference_std(self, flowrate):
@@ -171,11 +172,13 @@ class UncertaintyTools:
             float: The interpolated calibration reference standard uncertainty.
         """
         if self.hrs_config.multiple_calibration_reference_bool:
+            #print(self.hrs_config.get_calibration_reference())
             reltive_uncertainty = self.linear_interpolation(
                 flowrate, self.hrs_config.get_calibration_reference()
             )
         else:
             reltive_uncertainty = self.hrs_config.get_calibration_reference()
+        #print(f"relative_cal_dev uncertainty: {reltive_uncertainty}")
         return self.convert_relative_to_absolute(reltive_uncertainty, flowrate)
 
     def get_calibration_repeatability_std(self, flowrate):
@@ -206,12 +209,13 @@ class UncertaintyTools:
         of each uncertainty value in the uncertainty array and the corresponding time increment.
 
         Args:
-            time_increments (array-like): Array-like object containing time increments.
-            uncertaintyarray (array-like): Array-like object containing uncertainty values.
+            UncertaintyArray (Array): Array containing absolute uncertainties [kg/min].
 
         Returns:
             float: The total combined uncertainty.
         """
+        #TODO: Ligger feilen her? Vi har inn kgmin (rate) i sekundet.  
+        
         uncertainty_mass = 0
         delta_t = 1  # Since the uncertainty array contains data per second, even though
         # the flowrate is given as kg/min.
@@ -238,7 +242,7 @@ class UncertaintyTools:
 
     def calculate_cfm_abs_unc_std(self, flowrate):
         """
-        Calculate the relative uncertainty of the flowrate measurement.
+        Calculate the CFM absolute uncertainty of the current flowrate.
 
         This method calculates the relative uncertainty of the flowrate measurement based on
         the provided flowrate value. It retrieves interpolated uncertainties for calibration
@@ -260,6 +264,9 @@ class UncertaintyTools:
         field_repeatability = self.get_field_repeatability_std(flowrate)
         field_condition = self.get_field_condition_std(flowrate)
 
+        #TODO: Ligger feilen i denne funksjonen?
+        #print(calibration_deviation,calibration_repeatability, calibration_reference, field_repeatability,field_condition)
+
         var = self.calculate_sum_variance(
             calibration_deviation,
             calibration_repeatability,
@@ -267,9 +274,9 @@ class UncertaintyTools:
             field_condition,
             field_repeatability,
         )
-        return var  # TODO: Gjør var funksjonen det den skal?
+        return var
 
-    def calculate_cfm_rel_unc_95(self, flowrate, reference):
+    def calculate_cfm_rel_unc_95(self, flowrate):
         """
         Calculate the relative uncertainty of the flowrate measurement.
 
@@ -289,14 +296,17 @@ class UncertaintyTools:
         if flowrate == 0:
             return 0
 
-        calibration_deviation = self.get_calibration_deviation_std(flowrate) / reference
+        #TODO: Ligger feilen i denne funksjonen?
+        calibration_deviation = (self.get_calibration_deviation_std(flowrate) / flowrate)
         calibration_repeatability = (
-            self.get_calibration_repeatability_std(flowrate) / reference
+            self.get_calibration_repeatability_std(flowrate) / flowrate
         )
-        calibration_reference = self.get_calibration_reference_std(flowrate) / reference
-        field_repeatability = self.get_field_repeatability_std(flowrate) / reference
-        field_condition = self.get_field_condition_std(flowrate) / reference
+        calibration_reference = (self.get_calibration_reference_std(flowrate) / flowrate)
+        field_repeatability = (self.get_field_repeatability_std(flowrate) / flowrate)
+        field_condition = (self.get_field_condition_std(flowrate) / flowrate)
 
+        print(calibration_deviation,calibration_repeatability, calibration_reference, field_repeatability,field_condition)
+        
         var = self.calculate_sum_variance(
             calibration_deviation,
             calibration_repeatability,
@@ -444,7 +454,7 @@ class UncertaintyTools:
         rel_unc = self.calculate_sum_variance(
             cfm_uncertainty / mass_delivered,
             depress_vent_uncertainty / mass_delivered,
-            dead_volume_uncertainty / mass_delivered,  # TODO: mass_corrected.
+            dead_volume_uncertainty / mass_delivered,
         )
         expanded_relative_uncertainty = self.convert_std_to_confidence(rel_unc, k)
         return expanded_relative_uncertainty

@@ -44,8 +44,8 @@ class HRSConfiguration:
         self.pressure_sensor_uncertainty = None
         self.temperature_sensor_uncertainty = None
 
-        self.current_simulation_g_s = None
-        self.current_simulation_kg_min = None
+        # Previous pressure
+        self.previous_pressure = None
 
     def convert_relative_to_absolute(self, uncertainty, reference):
         """
