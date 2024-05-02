@@ -7,6 +7,7 @@ Classes:
 Methods:
     test_simulation()
 """
+import numpy as np
 
 class GenerateFlowData:
     """
@@ -14,10 +15,9 @@ class GenerateFlowData:
     a HRS.
     """
 
-#TODO: Lag en simulasjon for temp og trykk.
-
     def generate_flowrate_kg_sec(self, vehicle_tank_size_kg=5):
-        """
+        """ 
+        #TODO: Bruk h2filling til å lage bra fyllingsdata + trykk
         Work in progress.
         This method generates flow rates similar to those seen in a HRS, in the
         form of kg/second. It has 3 stages, increase, mass_flowrate_top, and 
@@ -25,7 +25,7 @@ class GenerateFlowData:
         """
         maximum_flowrate_kg_s = 60/1000 # 60 (g/s) / 1000 = kg/s
         max_mass = vehicle_tank_size_kg # grams
-        flowrate_increments = (60/1000)/190
+        flowrate_increments = (60/1000)/100
         mass_delivered = 0
         flowrate = 0
         flowrates = []
@@ -40,22 +40,5 @@ class GenerateFlowData:
             flowrates.append(flowrate)
             mass_delivered += flowrate
         #print(f"Mass delivered: {mass_delivered}")
-        return flowrates
-
-def test_simulation():
-    """
-    Simulation method. Creates an instance of the class generateflowdata,
-    and runs a simulation method, subsequently printing all the flowrates.
-
-    Parameters:
-        None
-    
-    Returns:
-        None
-    """
-    simulator = GenerateFlowData()
-    flowrates = simulator.generate_flowrate_kg_sec()
-    for second, rate in enumerate(flowrates, 1):  # second starter fra 1
-        print(f"Sekund {second}: Vektningsrate {rate} kg/s")
-
-#test_simulation()
+        pressures = np.linspace(0, 700, len(flowrates))
+        return flowrates, pressures

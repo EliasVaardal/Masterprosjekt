@@ -72,26 +72,30 @@ class Correction:
             print("The customer should get more hydrogen than ordered.")
 
     def calculate_total_correction_error(self, pre_press,pre_temp, post_press, post_temp,):
-        """ #TODO: Sjekk imeko, er det samme sted tettheten skal bli regnet på.
+        """
         Calculates the total correction error from dead volume and depressurized vent.
 
         Parameters:
             - Initial_pressure : Pressure from previous filling [Pa]
-            - Inital_temperature : Temperature from previous filling [Kelvin] #TODO??
+            - Inital_temperature : Temperature from previous filling [Kelvin]
             - Subsequent_pressure : Pressure at the end of current filling [Pa]
-            - Subsequent_temperature : Temperature at the end of current filling [Kelvin] #TODO??
+            - Subsequent_temperature : Temperature at the end of current filling [Kelvin]
         """
         dead_volume = self.hrs_config.get_dead_volume()
         depress_vent_volume = self.hrs_config.get_depressurization_vent_volume()
+
         pre_density_dead_volume = self.flow_properties.calculate_hydrogen_density(
             pre_press, pre_temp, dead_volume
             )
+
         post_density_dead_volume = self.flow_properties.calculate_hydrogen_density(
                 post_press, post_temp, dead_volume
             )
+
         dead_volume_mass_error = self.calculate_dead_volume_mass_error(
             pre_density_dead_volume, post_density_dead_volume
         )
+
         density_vent = self.flow_properties.calculate_hydrogen_density(
             post_press,
             post_temp,

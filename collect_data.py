@@ -35,7 +35,7 @@ class CollectData:
         self.hrs_config = hrs_configs
         self.file_path = self.get_filepath()
 
-        self.config_sheet = "hrs_config"
+        self.config_sheet = "HRS_config"
         self.calibration_sheet = "Calibration_uncertainty"
         self.field_sheet = "Field_uncertainty"
         self.write_sheet = "Write"

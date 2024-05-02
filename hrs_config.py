@@ -108,13 +108,13 @@ class HRSConfiguration:
         return self.field_condition_std
 
     def get_pressure_uncertainty(self, pressure):
-        """Returns the standard deviation for the pressure sensors uncertainty"""
+        """Returns the absolute standard deviation for the pressure sensors uncertainty"""
         return self.convert_relative_to_absolute(
             self.pressure_sensor_uncertainty, pressure
         )
 
     def get_temperature_uncertainty(self, temperature):
-        """Return the standard deviation for the temperature sensors uncertainty"""
+        """Return the absolute standard deviation for the temperature uncertainty"""
         return self.convert_relative_to_absolute(
             self.pressure_sensor_uncertainty, temperature
         )
