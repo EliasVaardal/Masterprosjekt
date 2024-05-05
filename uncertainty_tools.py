@@ -211,11 +211,9 @@ class UncertaintyTools:
         Returns:
             - Uncertainty_mass: The total combined uncertainty of mass measured by the CFM [kg].
         """
-
+        #TODO: Problem child.
         uncertainty_mass = 0
-        delta_t = 1  # Since the uncertainty array contains data per second, even though
-        # the flowrate is given as kg/min.
-        #TODO: Bevis på at nokke er feil.
+        delta_t = 1/60
         for uncertainty in uncertainties_abs_std:
             uncertainty_mass += uncertainty * delta_t
             #print(f"Total: {uncertainty_mass}, massefeil: {uncertainty}")
@@ -270,6 +268,7 @@ class UncertaintyTools:
             field_condition,
             field_repeatability,
         )
+
         #print(f"absolute var= {var}, var/flowrate = {var/flowrate}") random test
         return var
 
@@ -291,13 +290,12 @@ class UncertaintyTools:
         """
         if flowrate == 0:
             return 0
-        
-        calibration_deviation = self.get_calibration_deviation_std(flowrate) / flowrate
-        calibration_repeatability = self.get_calibration_repeatability_std(flowrate) / flowrate
-        calibration_reference = self.get_calibration_reference_std(flowrate) / flowrate
-        field_repeatability = self.get_field_repeatability_std(flowrate) / flowrate
-        field_condition = self.get_field_condition_std(flowrate) / flowrate
-        #print(calibration_deviation, calibration_repeatability, calibration_reference,field_repeatability , field_condition)
+        calibration_deviation = (self.get_calibration_deviation_std(flowrate) / flowrate ) *  100
+        calibration_repeatability = (self.get_calibration_repeatability_std(flowrate) / flowrate) * 100
+        calibration_reference = (self.get_calibration_reference_std(flowrate) / flowrate) * 100
+        field_repeatability = (self.get_field_repeatability_std(flowrate) / flowrate) * 100
+        field_condition = (self.get_field_condition_std(flowrate) / flowrate) * 100
+        print(calibration_deviation, calibration_repeatability, calibration_reference,field_repeatability , field_condition)
 
         var = self.calculate_sum_variance(
             calibration_deviation,
@@ -391,7 +389,7 @@ class UncertaintyTools:
             - Post-fil-temperature: Current filling temperature [K]
         """
         dead_volume = self.hrs_config.get_dead_volume()
-        dead_volume_unc = self.hrs_config.get_dead_volume_uncertainty()
+        dead_volume_unc = self.hrs_config.get_dead_volume_uncertainty() 
 
         prev_density = self.flow_properties.calculate_hydrogen_density(
             pre_press, pre_temp, dead_volume
@@ -415,7 +413,7 @@ class UncertaintyTools:
             (dm_p2 * current_density_unc),
         )
 
-    def  calculate_total_system_rel_unc_95( #TODO: her ligiger feilene
+    def  calculate_total_system_rel_unc_95(
         self,
         mass_delivered,
         uncertainties,
@@ -458,15 +456,13 @@ class UncertaintyTools:
         print(f"CFM uncertainty: {cfm_uncertainty}kg    Depressurized vent uncertainty: {depress_vent_uncertainty}kg  Dead volume uncertainty: {dead_volume_uncertainty}kg")
 
         rel_unc = self.calculate_sum_variance(
-            cfm_uncertainty / mass_delivered,
-            depress_vent_uncertainty / mass_delivered,
-            dead_volume_uncertainty / mass_delivered,
+            (cfm_uncertainty / mass_delivered) * 100,
+            (depress_vent_uncertainty / mass_delivered) * 100,
+            (dead_volume_uncertainty / mass_delivered) * 100
         )
 
         expanded_relative_uncertainty = self.convert_std_to_confidence(rel_unc, k)
         return expanded_relative_uncertainty
-    
-    
 
     #TODO.
     def calculate_pressure_uncertainty(self):

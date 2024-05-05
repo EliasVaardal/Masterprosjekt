@@ -64,7 +64,7 @@ class RunProgram:
             rel_uncertainty_95 = self.uncertainty_tools.calculate_cfm_rel_unc_95(flowrate, 1)
             abs_uncertainties_std.append(uncertainty_std)
             uncertainties_95.append(rel_uncertainty_95)
-            print(f"Time: {timer} seconds - Flow rate: {np.around(flowrate, 2)} kg/min ± {np.around(rel_uncertainty_95*100,3)}%")
+            print(f"Time: {timer} seconds - Flow rate: {np.around(flowrate, 2)} kg/min ± {np.around(rel_uncertainty_95,3)}%")
             timer += 1
 
         self.present_mass_data(
@@ -137,7 +137,7 @@ class RunProgram:
         # Corrects
         mass_corrected = tot_mass_delivered - total_error
 
-        #TODO: Her ligger det feil.
+        #TODO: Er nok rett no.
         #Calculates total uncertainty: CFM + DV + Vent
         tot_fill_unc_95 = (
             self.uncertainty_tools.calculate_total_system_rel_unc_95(
@@ -153,8 +153,8 @@ class RunProgram:
         #Prints results.
         print("Total mass delivered (before correction):", tot_mass_delivered, "kg")
         print(
-            f"Total mass delivered (after correction): {mass_corrected} ± {tot_fill_unc_95} %"
-        )#TODO: Måtte gjøre om fra deismaler til prosent over. Samme her....?
+            f"Total mass delivered (after correction): {mass_corrected}kg ± {tot_fill_unc_95} %"
+        )
         self.correction.check_correction(pre_fill_press, post_fill_press)
 
 

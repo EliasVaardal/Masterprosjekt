@@ -23,7 +23,7 @@ class Correction:
 
         # Pipe variables
 
-        self.pre_fill_pressure = 35000000  #C TODO: pascal
+        self.pre_fill_pressure = 35000000  #Pa TODO: pascal
         #self.pressure_initial = 700  # bar
         self.pre_fill_temp = 233.15  # Kelvin
         # Subsequent values

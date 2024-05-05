@@ -62,7 +62,7 @@ class CollectData:
         program_dir = os.path.dirname(os.path.abspath(__file__))
         dynamic_file_path = os.path.join(program_dir, "excel_template", "configurationtemplate.xlsx")
         return dynamic_file_path
-    
+
     def write_previous_pressure(self, density=300):
         excel_book = openpyxl.load_workbook(self.file_path)
         sheet = excel_book["Write"]
@@ -100,7 +100,7 @@ class CollectData:
         #print(df)
         self.calibration_data = df.to_dict(orient="List")
         #print(f"Calib: {self.calibration_data}")
-        
+
         # Collect multiple uncertaintainties field.
         df = pd.read_excel(
             self.file_path, sheet_name=self.field_sheet, header=1, index_col=0
