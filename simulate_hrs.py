@@ -29,6 +29,10 @@ class GenerateFlowData:
         mass_delivered = 0
         flowrate = 0
         flowrates = []
+        temps = []
+        temp = 20
+        temp_increments = 1
+        max_temp = -40
 
         while mass_delivered < max_mass:
             #print(flowrate)
@@ -36,9 +40,13 @@ class GenerateFlowData:
             if flowrate < maximum_flowrate_kg_s:
                 flowrate += flowrate_increments
                 flowrate = min(flowrate, maximum_flowrate_kg_s)
+            if temp < max_temp:
+                temp -= temp_increments
+                temp = max(temp, max_temp)
 
             flowrates.append(flowrate)
+            temps.append(temp)
             mass_delivered += flowrate
         #print(f"Mass delivered: {mass_delivered}")
         pressures = np.linspace(0, 700, len(flowrates))
-        return flowrates, pressures
+        return flowrates, pressures, temps

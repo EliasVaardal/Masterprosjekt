@@ -8,6 +8,7 @@ testing code, utilizing all classes in the uncertainty calculation program.
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import UnivariateSpline
 
 # Presents data.
 from collect_data import CollectData
@@ -47,7 +48,7 @@ class RunProgram:
         print(vars(self.hrs_config))
 
         # Flowrate of kg/sec values. Max 0.06kg/s
-        flowrates_kg_sec, pressures = self.simulator.generate_flowrate_kg_sec(6)
+        flowrates_kg_sec, pressures, temperature = self.simulator.generate_flowrate_kg_sec(6)
   
         # Flowrate of kg/min values, printed each second. Max 3.6
         flowrate_kgmin_per_second = [x * 60 for x in flowrates_kg_sec]
@@ -77,37 +78,43 @@ class RunProgram:
             2)
 
         time_intervals = np.arange(len(flowrates_kg_sec))
-        self.plot_simulation_kgmin_s(flowrates_kg_sec, uncertainties_95, time_intervals)
+        self.plot_relative_simulation(flowrates_kg_sec, uncertainties_95, time_intervals)
 
 
-    def plot_simulation_kgmin_s(self, data_kg_sec, uncertainties_kg_sec_relative, time_intervals):
-        data_kg_min = np.array(data_kg_sec) * 60
-        relative_uncertainties = np.array(uncertainties_kg_sec_relative)
-        absolute_uncertainties = data_kg_min * (relative_uncertainties / 100)  # Convert to absolute uncertainties
-        # Select every fifth data point and corresponding uncertainty and time interval
-        every_fifth_index = np.arange(0, len(data_kg_min), 5)
-        data_kg_min_every_fifth = data_kg_min[every_fifth_index]
-        absolute_uncertainties_every_fifth = absolute_uncertainties[every_fifth_index]
-        time_intervals_every_fifth = np.array(time_intervals)[every_fifth_index]
+    def plot_relative_simulation(self, flowrate_kg_sec, uncertainties_kg_sec_relative, time_intervals):
+        """
+        Plots the flowrate against its relative uncertainties.
 
-        # Plot data with error bars for selected points
-        plt.errorbar(
-            time_intervals_every_fifth,
-            data_kg_min_every_fifth,
-            yerr=absolute_uncertainties_every_fifth,
-            fmt='o',
-            label='Data with uncertainty',
-            elinewidth=2,
-            capsize=5,
-            capthick=2,
-            ecolor='red',
-            markersize=5
-        )
+        Args:
+        flowrate_kg_sec (list or array): List or array containing flowrate values in kg/sec.
+        uncertainties_kg_sec_relative (list or array): List or array containing relative uncertainties corresponding to the flowrates.
+        time_intervals (list or array): Time intervals; not used in plotting in this example, included as per function signature.
+        """
+        flowrate_kg_min = [rate * 60 for rate in flowrate_kg_sec]
+    
+        # Array conversion for mathematical operations
+        x = np.array(flowrate_kg_min)
+        y = np.array(uncertainties_kg_sec_relative)
 
-        plt.xlabel('Time (seconds)')
-        plt.ylabel('Flow rate (kg/min)')
-        plt.title('Hydrogen Tank Filling Simulation with Sparse Uncertainty')
+        # Using Spline for smooth curve
+        spline_positive = UnivariateSpline(x, y, s=1)  # Smoothing factor
+        spline_negative = UnivariateSpline(x, -y, s=1)  # Mirrored spline
+
+        # Generating more points to create a smooth line
+        x_dense = np.linspace(min(x), max(x), 300)
+        y_dense_positive = spline_positive(x_dense)
+        y_dense_negative = spline_negative(x_dense)
+
+        # Plot
+        plt.figure(figsize=(10, 5))
+        plt.plot(x_dense, y_dense_positive, label='Positive Uncertainty', color='blue')
+        plt.plot(x_dense, y_dense_negative, label='Negative Uncertainty', color='green')
+        plt.title('Flowrate vs Relative Uncertainty')
+        plt.xlabel('Flowrate (kg/min)')
+        plt.ylabel('Relative Uncertainty (%)')
         plt.grid(True)
+        plt.axhline(0, color='red', linewidth=0.5) # Zero line for reference
+        plt.ylim(min(y_dense_negative)*1.1, max(y_dense_positive)*1.1)  # Ensure the plot includes both extremities
         plt.legend()
         plt.show()
 
@@ -157,6 +164,7 @@ class RunProgram:
         )
         self.correction.check_correction(pre_fill_press, post_fill_press)
 
+    
 
 program = RunProgram()
 program.run_simulation()
