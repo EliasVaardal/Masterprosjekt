@@ -48,7 +48,7 @@ class RunProgram:
 
         # Flowrate of kg/sec values. Max 0.06kg/s
         flowrates_kg_sec, pressures = self.simulator.generate_flowrate_kg_sec(6)
-
+  
         # Flowrate of kg/min values, printed each second. Max 3.6
         flowrate_kgmin_per_second = [x * 60 for x in flowrates_kg_sec]
 
