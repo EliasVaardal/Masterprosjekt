@@ -33,7 +33,7 @@ class FlowProperties:
         self.h_sm = None
 
 
-    def calculate_std_vol_flowrate(self):#TODO: ummm
+    def calculate_std_vol_flowrate(self):#TODO: Dropp for no,. 
         """
         Calculates the standard volumetric flow rate.
         Args:
@@ -86,9 +86,10 @@ class FlowProperties:
         Returns: 
             Calculated density (kg/m3)
         """
+        #print(f"Pressure: {pressure}, Temp: {temperature}, Volume: {volume}, R: {self.gas_constant_r}")
         n = (pressure *volume ) / (self.gas_constant_r*temperature)
         density2 = n*self.molar_mass_m / volume
-
+        #print(f"n: {n}, m: {self.molar_mass_m}")
         #density1 = (pressure * self.molar_mass_m) / (self.gas_constant_r*temperature)
         #print(f"Density gamle: {density2} Density nye {density1}")
         return density2

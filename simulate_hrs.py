@@ -25,7 +25,7 @@ class GenerateFlowData:
         """
         maximum_flowrate_kg_s = 60/1000 # 60 (g/s) / 1000 = kg/s
         max_mass = vehicle_tank_size_kg # grams
-        flowrate_increments = (60/1000)/100
+        flowrate_increments = (60/1000)/162
         mass_delivered = 0
         flowrate = 0
         flowrates = []
@@ -40,7 +40,7 @@ class GenerateFlowData:
             if flowrate < maximum_flowrate_kg_s:
                 flowrate += flowrate_increments
                 flowrate = min(flowrate, maximum_flowrate_kg_s)
-            if temp < max_temp:
+            if temp > max_temp:
                 temp -= temp_increments
                 temp = max(temp, max_temp)
 

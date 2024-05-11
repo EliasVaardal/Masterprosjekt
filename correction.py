@@ -22,23 +22,20 @@ class Correction:
         self.flow_properties = FlowProperties()
 
         # Pipe variables
-
         self.pre_fill_pressure = 35000000  #Pa TODO: pascal
-        #self.pressure_initial = 700  # bar
         self.pre_fill_temp = 233.15  # Kelvin
-        # Subsequent values
-        self.post_fill_pressure = 70000000  # pascal
-        #self.pressure_subsequent = 350  # bar
-        self.post_fill_temp = 273.15  # kelvin
+        self.post_fill_pressure = None
+        self.post_fill_temp = None
 
     def calculate_vented_mass_error(self, volume_vent, density):
         """
         Calculates the mass of hydrogen lost due to depressurization of the dispenser hose.
         Parameters:
             - v_vv = volume of piping containing vent gas [m3]
-            - p_2 = hydrogen density at end of filling [kg/m3]
+            - p_2 = hydrogen density at end of filling [kg/m3]¨
+
         Returns:
-            - density of hydrogen at the end of current fueling [kg]
+            - Mass vented at end of filling [kg]
         """
         m_vv = volume_vent * density
         return m_vv
@@ -81,6 +78,8 @@ class Correction:
             - Subsequent_pressure : Pressure at the end of current filling [Pa]
             - Subsequent_temperature : Temperature at the end of current filling [Kelvin]
         """
+        #print(f"1: {pre_press}, {pre_temp}, {post_press}, {post_temp}")
+
         dead_volume = self.hrs_config.get_dead_volume()
         depress_vent_volume = self.hrs_config.get_depressurization_vent_volume()
 
@@ -101,7 +100,9 @@ class Correction:
             post_temp,
             depress_vent_volume,
         )
+        #print(f"Dv pre - post: {pre_density_dead_volume} - {post_density_dead_volume}")
+
         vented_mass = self.calculate_vented_mass_error(depress_vent_volume, density_vent)
-        print(f"Dead volume mass {dead_volume_mass_error} Vented mass: {vented_mass}")
+        #print(f"Dead volume mass {dead_volume_mass_error} Vented mass: {vented_mass}")
         total_error = dead_volume_mass_error + vented_mass
         return total_error

@@ -4,7 +4,6 @@ through the Excel sheet template. This is done in steps, as there are multiple
 tables containing different types of data.
 """
 import os
-import openpyxl
 import pandas as pd
 from hrs_config import HRSConfiguration
 
@@ -38,7 +37,6 @@ class CollectData:
         self.config_sheet = "HRS_config"
         self.calibration_sheet = "Calibration_uncertainty"
         self.field_sheet = "Field_uncertainty"
-        self.write_sheet = "Write"
 
         self.single_meter_uncertainties = None
         self.calibration_data = None
@@ -46,40 +44,21 @@ class CollectData:
         self.config_data = None
         self.volume_data = None
         self.sensor_data = None
+        self.annual_data = None
 
         self.read_file()
         self.set_table_1_config()
         self.set_table_2_config()
         self.set_table_3_config()
         self.set_hrs_uncertainty()
-        self.read_previous_pressure()
-        self.write_previous_pressure()
 
     def get_filepath(self):
         """
         Returns the 
         """
         program_dir = os.path.dirname(os.path.abspath(__file__))
-        dynamic_file_path = os.path.join(program_dir, "excel_template", "configurationtemplate.xlsx")
-        return dynamic_file_path
-
-    def write_previous_pressure(self, density=300):
-        excel_book = openpyxl.load_workbook(self.file_path)
-        sheet = excel_book["Write"]
-        sheet['C3'] = density
-        excel_book.save(self.file_path)
-
-
-    def read_previous_pressure(self):
-        """
-        Reads the previous pressure written by the previous program,
-        and stores it in the hrs_config class.
-        """
-        df = pd.read_excel(
-            self.file_path, sheet_name=self.write_sheet, header=1, index_col=0
-        )
-        self.hrs_config.previous_pressure = df.iloc[0, 1].astype(float)
-
+        dynamic_filepath = os.path.join(program_dir, "excel_template", "configurationtemplate.xlsx")
+        return dynamic_filepath
 
     def read_file(self):
         """
@@ -111,14 +90,18 @@ class CollectData:
         # Collect decisions
         df = pd.read_excel(self.file_path, sheet_name=self.config_sheet)
         #print(df)
-        table1_specific_cells = df.iloc[[2, 3, 5, 6, 7, 8, 9], 2]  # YES/NO
+        table1_specific_cells = df.iloc[[2, 3, 5, 6, 7, 8, 9, 11, 12, 13], 2]  # YES/NO
         #print(table1_specific_cells)
         self.config_data = table1_specific_cells.to_dict()
 
+
         # Collect single value calibration and field uncertainties
-        table1_uncertainties = df.iloc[[5, 6, 7, 8, 9], 3].astype(float)
+        table1_uncertainties = df.iloc[[5, 6, 7, 8, 9, 11, 12, 13], 3].astype(float)
         #print(table1_uncertainties)
         self.single_meter_uncertainties = table1_uncertainties.to_dict()
+
+        #Collect years
+        self.annual_data = df.iloc[11,4]
 
         # Collect table 2 volumes and related uncertainties
         table2_specific_cells = df.iloc[[5, 6, 7], [7, 9]].astype(float)
@@ -174,8 +157,22 @@ class CollectData:
         self.hrs_config.multiple_field_condition_bool = self.convert_decision_to_bool(
             self.config_data, 9
         )
+        self.hrs_config.include_annual_dev_bool = self.convert_decision_to_bool(
+            self.config_data, 11
+        )
+        self.hrs_config.include_temp_bool = self.convert_decision_to_bool(
+            self.config_data, 12
+        )
+        self.hrs_config.include_pres_bool = self.convert_decision_to_bool(
+            self.config_data, 13
+        )
+
 
     def set_table_2_config(self):
+        """
+        Store the specific values associated to table 2 from the Excel template,
+        to the class HRSConfiguration().
+        """
         self.hrs_config.dead_volume = self.volume_data[5]["Unnamed: 7"]  # H7
         self.hrs_config.dead_volume_uncertainty = self.volume_data[5][
             "Unnamed: 9"
@@ -189,6 +186,10 @@ class CollectData:
 
 
     def set_table_3_config(self):
+        """
+        Store the specific values associated to table 3 from the Excel template,
+        to the class HRSConfiguration().
+        """
         # Table 3 uncertainty
         self.hrs_config.temperature_sensor_uncertainty = self.sensor_data[10][
             "Unnamed: 7"
@@ -254,10 +255,26 @@ class CollectData:
             ]
         else:
             self.hrs_config.field_condition_std = self.single_meter_uncertainties[9]
+        # Annual deviation
+        if self.convert_decision_to_bool(self.config_data, 11):
+            print(self.annual_data)
+            self.hrs_config.annual_deviation = self.single_meter_uncertainties[11]
+            self.hrs_config.years_since_calibration = self.annual_data
+        else:
+            self.hrs_config.annual_deviation = 0
 
+        # Pressure contribution
+        if self.convert_decision_to_bool(self.config_data, 12):
+            self.hrs_config.pressure_contribution = self.single_meter_uncertainties[12]
+        else:
+            self.hrs_config.pressure_contribution = 0
+
+        #Temperature contribution
+        if self.convert_decision_to_bool(self.config_data, 13):
+            self.hrs_config.temperature_contribution = self.single_meter_uncertainties[13]
+        else:
+            self.hrs_config.temperature_contribution = 0
 
 hrs_config = HRSConfiguration()
 data_reader = CollectData(hrs_config)
 #print(vars(hrs_config))
-# data_reader.read_file()
-# self.execlfile = r"C:\Users\Elias\Downloads\Master_project_sheet.xlsx"

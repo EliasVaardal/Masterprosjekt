@@ -95,7 +95,7 @@ class UncertaintyTools:
         Parameters:
             - Relative uncertainty (%)
             - Reference measurement (unit)
-        
+
         Returns:
             - Absolute uncertainty (unit)
         """
@@ -111,7 +111,8 @@ class UncertaintyTools:
             uncertainty.
 
         Returns:
-            float: The interpolated field condition standard uncertainty for the given flowrate [kg/min].
+            float: The interpolated field condition standard uncertainty for the given 
+            flowrate [kg/min].
         """
         if self.hrs_config.multiple_field_condition_bool:
             relative_uncertainty = self.linear_interpolation(
@@ -157,7 +158,7 @@ class UncertaintyTools:
             )
         else:
             relative_uncertainty = self.hrs_config.get_calibration_deviation()
-        #print(f"relative_cal_dev uncertainty: {relative_uncertainty}")
+        # print(f"relative_cal_dev uncertainty: {relative_uncertainty}")
         return self.convert_relative_to_absolute(relative_uncertainty, flowrate)
 
     def get_calibration_reference_std(self, flowrate):
@@ -172,13 +173,13 @@ class UncertaintyTools:
             float: The interpolated absolute calibration reference standard uncertainty [kg/min].
         """
         if self.hrs_config.multiple_calibration_reference_bool:
-            #print(self.hrs_config.get_calibration_reference())
+            # print(self.hrs_config.get_calibration_reference())
             reltive_uncertainty = self.linear_interpolation(
                 flowrate, self.hrs_config.get_calibration_reference()
             )
         else:
             reltive_uncertainty = self.hrs_config.get_calibration_reference()
-        #print(f"relative_cal_dev uncertainty: {reltive_uncertainty}")
+        # print(f"relative_cal_dev uncertainty: {reltive_uncertainty}")
         return self.convert_relative_to_absolute(reltive_uncertainty, flowrate)
 
     def get_calibration_repeatability_std(self, flowrate):
@@ -211,12 +212,11 @@ class UncertaintyTools:
         Returns:
             - Uncertainty_mass: The total combined uncertainty of mass measured by the CFM [kg].
         """
-        #TODO: Problem child.
         uncertainty_mass = 0
-        delta_t = 1/60
+        delta_t = 1 / 60
         for uncertainty in uncertainties_abs_std:
             uncertainty_mass += uncertainty * delta_t
-            #print(f"Total: {uncertainty_mass}, massefeil: {uncertainty}")
+            # print(f"Total: {uncertainty_mass}, massefeil: {uncertainty}")
         return uncertainty_mass
 
     def calculate_std_vol_flowrate_unc(self, qvo, qm, uqm, z0m, uz0m):
@@ -233,10 +233,9 @@ class UncertaintyTools:
         Returns:
             float: The standard uncertainty of the volumetric flow rate.
         """
-        # TODO: trenge implementasjon
         return math.sqrt((uqm / qm) ** 2 + (uz0m / z0m) ** 2) * qvo
 
-    def calculate_cfm_abs_unc_std(self, flowrate):
+    def calculate_cfm_abs_unc_std(self, flowrate, temperature, pressure):
         """
         Calculate the CFM absolute uncertainty of the current flowrate.
 
@@ -259,7 +258,17 @@ class UncertaintyTools:
         calibration_reference = self.get_calibration_reference_std(flowrate)
         field_repeatability = self.get_field_repeatability_std(flowrate)
         field_condition = self.get_field_condition_std(flowrate)
-        #print(calibration_deviation, calibration_repeatability, calibration_reference,field_repeatability , field_condition)
+        # print(calibration_deviation, calibration_repeatability,
+        #calibration_reference,field_repeatability , field_condition)
+
+        # TODO:
+        temp_unc = self.calculate_relative_temperature_uncertainty(temperature)
+        press_unc = self.calculate_relative_pressure_uncertainty()
+        annual_dev_unc = self.get_annual_deviation()
+        abs_temp = self.convert_relative_to_absolute(temp_unc, temperature)
+        abs_pres = self.convert_relative_to_absolute(press_unc, pressure)
+        abs_annual = self.convert_relative_to_absolute(annual_dev_unc, flowrate)
+        #print(f"Pressure: {pressure}, rel_pres: {press_unc}%, abs_press: {abs_pres} bar")
 
         var = self.calculate_sum_variance(
             calibration_deviation,
@@ -267,12 +276,15 @@ class UncertaintyTools:
             calibration_reference,
             field_condition,
             field_repeatability,
+            abs_temp,
+            abs_pres,
+            abs_annual
         )
 
-        #print(f"absolute var= {var}, var/flowrate = {var/flowrate}") random test
+        # print(f"absolute var= {var}, var/flowrate = {var/flowrate}") random test
         return var
 
-    def calculate_cfm_rel_unc_95(self, flowrate, k=2):
+    def calculate_cfm_rel_unc_95(self, flowrate, temperature, pressure, k=2):
         """
         Calculate the relative uncertainty of the CFM to the current flowrate.
 
@@ -290,12 +302,32 @@ class UncertaintyTools:
         """
         if flowrate == 0:
             return 0
-        calibration_deviation = (self.get_calibration_deviation_std(flowrate) / flowrate ) *  100
-        calibration_repeatability = (self.get_calibration_repeatability_std(flowrate) / flowrate) * 100
-        calibration_reference = (self.get_calibration_reference_std(flowrate) / flowrate) * 100
-        field_repeatability = (self.get_field_repeatability_std(flowrate) / flowrate) * 100
+        calibration_deviation = (
+            self.get_calibration_deviation_std(flowrate) / flowrate
+        ) * 100
+        calibration_repeatability = (
+            self.get_calibration_repeatability_std(flowrate) / flowrate
+        ) * 100
+        calibration_reference = (
+            self.get_calibration_reference_std(flowrate) / flowrate
+        ) * 100
+        field_repeatability = (
+            self.get_field_repeatability_std(flowrate) / flowrate
+        ) * 100
         field_condition = (self.get_field_condition_std(flowrate) / flowrate) * 100
-        print(calibration_deviation, calibration_repeatability, calibration_reference,field_repeatability , field_condition)
+
+        #TODO:
+        temp_unc = self.calculate_relative_temperature_uncertainty(temperature)
+        press_unc = self.calculate_relative_pressure_uncertainty()*pressure #TODO?
+        annual_dev_unc = self.get_annual_deviation()
+
+        #print(
+        #    calibration_deviation,
+        #    calibration_repeatability,
+        #    calibration_reference,
+        #    field_repeatability,
+        #    field_condition,
+        #)
 
         var = self.calculate_sum_variance(
             calibration_deviation,
@@ -303,11 +335,16 @@ class UncertaintyTools:
             calibration_reference,
             field_condition,
             field_repeatability,
+            temp_unc,
+            press_unc,
+            annual_dev_unc
         )
-        #print(f"relative var= {var}")
+        # print(f"relative var= {var}")
         return self.convert_std_to_confidence(var, k)
 
-    def calculate_density_abs_unc_std(self, pressure, temperature, volume, volume_uncertainty):
+    def calculate_density_abs_unc_std(
+        self, pressure, temperature, volume, volume_uncertainty
+    ):
         """
         Calculates the density uncertainty based off: (n * m) / V, where n is the ideal
         gas law. Utilizes propagation of uncertainty and partial derivation to reach
@@ -360,8 +397,10 @@ class UncertaintyTools:
             - Uncertainty of the mass depressurized [kg]
         """
 
-        vent_volume = self.hrs_config.get_depressurization_vent_volume() #0.0025 m3
-        vent_uncertainty = self.hrs_config.get_depressurization_vent_volume_unc() #0.02
+        vent_volume = self.hrs_config.get_depressurization_vent_volume()  # 0.0025 m3
+        vent_uncertainty = (
+            self.hrs_config.get_depressurization_vent_volume_unc()
+        )
 
         density = self.flow_properties.calculate_hydrogen_density(
             pressure, temperature, vent_volume
@@ -376,12 +415,11 @@ class UncertaintyTools:
             (dm_dp * density_uncertainty), (dm_dv * vent_uncertainty)
         )
 
-
     def caclulate_dead_volume_abs_unc(self, pre_press, pre_temp, post_press, post_temp):
         """
         Calculates the dead volume uncertainty based on partial derivation and error
         propagation.
-        
+
         Args:
             - Pre-fill-pressure: Previous filling pressure [Pa]
             - Pre-fill-temperature: Previous filling temperature [K]
@@ -389,7 +427,7 @@ class UncertaintyTools:
             - Post-fil-temperature: Current filling temperature [K]
         """
         dead_volume = self.hrs_config.get_dead_volume()
-        dead_volume_unc = self.hrs_config.get_dead_volume_uncertainty() 
+        dead_volume_unc = self.hrs_config.get_dead_volume_uncertainty()
 
         prev_density = self.flow_properties.calculate_hydrogen_density(
             pre_press, pre_temp, dead_volume
@@ -413,7 +451,7 @@ class UncertaintyTools:
             (dm_p2 * current_density_unc),
         )
 
-    def  calculate_total_system_rel_unc_95(
+    def calculate_total_system_rel_unc_95(
         self,
         mass_delivered,
         uncertainties,
@@ -421,30 +459,31 @@ class UncertaintyTools:
         pre_fill_temp,
         post_fill_press,
         post_fill_temp,
-        k=1
+        k=1,
     ):
         """
-        This method calculates the total uncertainty to the mass correction, given in relative 
-        expanded uncertainty, for k = 2. It uses three methods to calculate it. CFM uncertainty 
-        returns totaled uncertainty from measurements, in kg.Mass vented uncertainty in kg, and 
+        This method calculates the total uncertainty to the mass correction, given in relative
+        expanded uncertainty, for k = 2. It uses three methods to calculate it. CFM uncertainty
+        returns totaled uncertainty from measurements, in kg.Mass vented uncertainty in kg, and
         the uncertainty in change in mass from dead volume in kg.
 
         Parameters:
             - Mass delivered: Calculated corrected mass delivered [kg]
-            - Uncertainties: CFM absolute std uncertainties [kg/min] 
+            - Uncertainties: CFM absolute std uncertainties [kg/min]
             - Pre-fill-pressure: Previous filling pressure [Pa]
             - Pre-fill-temperature: Previous filling temperature [K]
             - Post-fill-pressure: Current filling pressure [Pa]
             - Post-fil-temperature: Current filling temperature [K]
-            
+
         """
-         # TODO: Antar full positiv korrelasjon - ligning
+        # TODO: Antar full positiv korrelasjon - ligning
         cfm_uncertainty = self.calculate_total_combined_unc(uncertainties)
         # -> Returnerer kalkulert abs suikkerhet til CFM målinger [kg].
 
-        depress_vent_uncertainty = self.calculate_depress_abs_unc(post_fill_press, post_fill_temp)
+        depress_vent_uncertainty = self.calculate_depress_abs_unc(
+            post_fill_press, post_fill_temp
+        )
         # -> Returnerer kalkulert abs usikkerhet til depress [kg]
-        
         dead_volume_uncertainty = self.caclulate_dead_volume_abs_unc(
             pre_fill_press,
             pre_fill_temp,
@@ -453,21 +492,123 @@ class UncertaintyTools:
         )
         # -> returnerer kalkulert abs usikkerhet til dødvolum [kg]
 
-        print(f"CFM uncertainty: {cfm_uncertainty}kg    Depressurized vent uncertainty: {depress_vent_uncertainty}kg  Dead volume uncertainty: {dead_volume_uncertainty}kg")
+        #print(
+        #    f"CFM uncertainty: {cfm_uncertainty}kg    Depressurized vent uncertainty:
+        # {depress_vent_uncertainty}kg  Dead volume uncertainty: {dead_volume_uncertainty}kg"
+        #)
 
         rel_unc = self.calculate_sum_variance(
             (cfm_uncertainty / mass_delivered) * 100,
             (depress_vent_uncertainty / mass_delivered) * 100,
-            (dead_volume_uncertainty / mass_delivered) * 100
+            (dead_volume_uncertainty / mass_delivered) * 100,
         )
 
         expanded_relative_uncertainty = self.convert_std_to_confidence(rel_unc, k)
         return expanded_relative_uncertainty
 
-    #TODO.
-    def calculate_pressure_uncertainty(self):
-        pass
-    def calculate_temperature_uncertainty(self):
-        pass
-    def calculate_annual_deviation_unc(self):
-        pass
+    #TODO!
+    def calculate_relative_pressure_uncertainty(self):
+        """
+        Returns the relative uncertainty associated to increasing pressure.
+
+        Parameters:
+            - Pressure [bars]
+
+        Return:
+            - Relative uncertainty associated to pressure.
+        """
+        #print(f"{self.hrs_config.pressure_contribution} oogg {pressure}")
+        return self.hrs_config.pressure_contribution
+
+    def calculate_relative_temperature_uncertainty(self, temperature):
+        """
+        Returns the relative uncertainty associated to increasing temperature.
+
+        Parameters:
+            - Temperature [C]
+
+        Return:
+            - Relative uncertainty associated to temperature.
+        """
+        # Negativ usikkerhet? #TOOD: weird.
+        abs_temp = self.hrs_config.temperature_contribution
+        rel_unc = (abs_temp * temperature) / 100 # kg/min per C * t
+        return rel_unc
+
+    def get_annual_deviation(self):
+        """
+        Returns the annual deviation associated to the CFM in relative
+        uncertainty. 
+        """
+        return self.hrs_config.annual_deviation * self.hrs_config.years_since_calibration
+
+
+    def return_misc_press_data(
+        self,
+        flowrate,
+        pressure,
+        temperature,
+        k=1,
+        ):
+        """
+        This method calculates the total uncertainty to the mass correction, given in relative
+        expanded uncertainty, for k = 2. It uses three methods to calculate it. CFM uncertainty
+        returns totaled uncertainty from measurements, in kg.Mass vented uncertainty in kg, and
+        the uncertainty in change in mass from dead volume in kg.
+
+        Parameters:
+            - Mass delivered: Calculated corrected mass delivered [kg]
+            - Uncertainties: CFM absolute std uncertainties [kg/min]
+            - Pre-fill-pressure: Previous filling pressure [Pa]
+            - Pre-fill-temperature: Previous filling temperature [K]
+            - Post-fill-pressure: Current filling pressure [Pa]
+            - Post-fil-temperature: Current filling temperature [K]
+
+        """
+
+        temp_unc = self.calculate_relative_temperature_uncertainty(temperature)*temperature
+        press_unc = self.calculate_relative_pressure_uncertainty()*pressure #TODO?
+        annual_dev_unc = self.get_annual_deviation()*flowrate
+        return temp_unc, press_unc, annual_dev_unc
+
+
+    def return_error_data(
+        self,
+        mass_delivered,
+        pre_fill_press,
+        pre_fill_temp,
+        post_fill_press,
+        post_fill_temp,
+        k=1,
+        ):
+        """
+        This method calculates the total uncertainty to the mass correction, given in relative
+        expanded uncertainty, for k = 2. It uses three methods to calculate it. CFM uncertainty
+        returns totaled uncertainty from measurements, in kg.Mass vented uncertainty in kg, and
+        the uncertainty in change in mass from dead volume in kg.
+
+        Parameters:
+            - Mass delivered: Calculated corrected mass delivered [kg]
+            - Uncertainties: CFM absolute std uncertainties [kg/min]
+            - Pre-fill-pressure: Previous filling pressure [Pa]
+            - Pre-fill-temperature: Previous filling temperature [K]
+            - Post-fill-pressure: Current filling pressure [Pa]
+            - Post-fil-temperature: Current filling temperature [K]
+
+        """
+        depress_vent_uncertainty = self.calculate_depress_abs_unc(
+            post_fill_press, post_fill_temp
+        )
+
+        # -> Returnerer kalkulert abs usikkerhet til depress [kg]
+        dead_volume_uncertainty = self.caclulate_dead_volume_abs_unc(
+            pre_fill_press,
+            pre_fill_temp,
+            post_fill_press,
+            post_fill_temp,
+        )
+        depress_unc = (depress_vent_uncertainty / mass_delivered) * 100
+        dead_volume_unc = (dead_volume_uncertainty / mass_delivered) * 100
+        return depress_unc, dead_volume_unc
+
+

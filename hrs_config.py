@@ -24,7 +24,9 @@ class HRSConfiguration:
         self.multiple_calibration_repeatability_bool = None
         self.multiple_field_repeatability_bool = None
         self.multiple_field_condition_bool = None
-        self.use_parallell_meters = None
+        self.include_temp_bool = None
+        self.include_pres_bool = None
+        self.include_annual_dev_bool = None
 
         # Table 2 volume and related uncertainties.
         self.dead_volume = None
@@ -40,12 +42,14 @@ class HRSConfiguration:
         self.field_repeatability_std = None
         self.field_condition_std = None
 
+        self.pressure_contribution = None
+        self.temperature_contribution = None
+        self.annual_deviation = None
+        self.years_since_calibration = None
+
         # Sensor uncertainties
         self.pressure_sensor_uncertainty = None
         self.temperature_sensor_uncertainty = None
-
-        # Previous pressure
-        self.previous_pressure = None
 
     def convert_relative_to_absolute(self, uncertainty, reference):
         """
