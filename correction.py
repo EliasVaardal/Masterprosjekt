@@ -40,7 +40,7 @@ class Correction:
         m_vv = volume_vent * density
         return m_vv
 
-    def calculate_dead_volume_mass_error(self, previous_density, current_density):
+    def calculate_dead_volume_mass_error(self, previous_density, current_density, volume):
         """
         Calculates dead volume based off (IMEKO,2022).
 
@@ -51,22 +51,8 @@ class Correction:
         Returns:
             - Dead volume to be substracted from mass delivered total [kg].
         """
-        dead_volume_mass = self.hrs_config.get_dead_volume() * (
-            current_density - previous_density
-        )
+        dead_volume_mass =  volume * (current_density - previous_density)
         return dead_volume_mass
-
-    def check_correction(self, pre_fill_pressure, post_fill_pressure):
-        """
-        A testing method to test if the actual correction is done correctly,
-        only looking at previous and current pressure.
-
-        Will probably be removed.
-        """
-        if pre_fill_pressure < post_fill_pressure:
-            print("The customer should recieve less hydrogen than ordered.")
-        if post_fill_pressure < pre_fill_pressure:
-            print("The customer should get more hydrogen than ordered.")
 
     def calculate_total_correction_error(self, pre_press,pre_temp, post_press, post_temp,):
         """
@@ -77,32 +63,26 @@ class Correction:
             - Inital_temperature : Temperature from previous filling [Kelvin]
             - Subsequent_pressure : Pressure at the end of current filling [Pa]
             - Subsequent_temperature : Temperature at the end of current filling [Kelvin]
+        
+        Returns:
+            - Total_error: Total error to be corrected [kg]
+            - vented_mass: Amount of systematic mass error due to vents [kg]
+            - dv_mass_error: Amount of mass error due to dead volume [kg]
         """
-        #print(f"1: {pre_press}, {pre_temp}, {post_press}, {post_temp}")
+        #Collect volumes from configuration
+        volume_dv = self.hrs_config.get_dead_volume()
+        volume_vv = self.hrs_config.get_depressurization_vent_volume()
+        
+        # Calculate density based on corresponding pressures and temperatures
+        prev_density = self.flow_properties.calculate_hydrogen_density(pre_press, pre_temp)
+        curr_density = self.flow_properties.calculate_hydrogen_density(post_press, post_temp)
 
-        dead_volume = self.hrs_config.get_dead_volume()
-        depress_vent_volume = self.hrs_config.get_depressurization_vent_volume()
+        # Calculate dead volume mass error
+        dv_mass_error = self.calculate_dead_volume_mass_error(prev_density, curr_density, volume_dv)
 
-        pre_density_dead_volume = self.flow_properties.calculate_hydrogen_density(
-            pre_press, pre_temp, dead_volume
-            )
+        #Calculate vented mass error
+        vented_mass = self.calculate_vented_mass_error(prev_density, volume_vv)
 
-        post_density_dead_volume = self.flow_properties.calculate_hydrogen_density(
-                post_press, post_temp, dead_volume
-            )
-
-        dead_volume_mass_error = self.calculate_dead_volume_mass_error(
-            pre_density_dead_volume, post_density_dead_volume
-        )
-
-        density_vent = self.flow_properties.calculate_hydrogen_density(
-            post_press,
-            post_temp,
-            depress_vent_volume,
-        )
-        #print(f"Dv pre - post: {pre_density_dead_volume} - {post_density_dead_volume}")
-
-        vented_mass = self.calculate_vented_mass_error(depress_vent_volume, density_vent)
-        #print(f"Dead volume mass {dead_volume_mass_error} Vented mass: {vented_mass}")
-        total_error = dead_volume_mass_error + vented_mass
-        return total_error
+        print(f"Dead volume mass {dv_mass_error} Vented mass: {vented_mass}")
+        total_error = dv_mass_error + vented_mass
+        return total_error, vented_mass, dv_mass_error

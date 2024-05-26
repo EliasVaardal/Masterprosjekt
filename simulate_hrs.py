@@ -14,39 +14,38 @@ class GenerateFlowData:
     This class contains methods for generating flowrates similar to those seen in
     a HRS.
     """
+    def __init__(self):
+        self.max_flowrate_kg_s = 60/1000 # 60 (g/s) / 1000 = kg/s
+        self.flowrate_increments = (60/1000)/100
+        self.start_temperature = 20
+        self.negative_temp_limit = -40
+        self.temp_increments = 1
 
-    def generate_flowrate_kg_sec(self, vehicle_tank_size_kg=5):
+
+    def generate_filling_protocol_kg_sec(self, vehicle_tank_size_kg):
         """ 
-        #TODO: Bruk h2filling til å lage bra fyllingsdata + trykk
         Work in progress.
         This method generates flow rates similar to those seen in a HRS, in the
         form of kg/second. It has 3 stages, increase, mass_flowrate_top, and 
         decline.  
         """
-        maximum_flowrate_kg_s = 60/1000 # 60 (g/s) / 1000 = kg/s
-        max_mass = vehicle_tank_size_kg # grams
-        flowrate_increments = (60/1000)/162
         mass_delivered = 0
         flowrate = 0
         flowrates = []
+        temp = self.start_temperature
         temps = []
-        temp = 20
-        temp_increments = 1
-        max_temp = -40
 
-        while mass_delivered < max_mass:
+        while mass_delivered < vehicle_tank_size_kg:
             #print(flowrate)
             # Øk flowrate til maksimum er nådd
-            if flowrate < maximum_flowrate_kg_s:
-                flowrate += flowrate_increments
-                flowrate = min(flowrate, maximum_flowrate_kg_s)
-            if temp > max_temp:
-                temp -= temp_increments
-                temp = max(temp, max_temp)
-
+            if flowrate < self.max_flowrate_kg_s:
+                flowrate += self.flowrate_increments
+                flowrate = min(flowrate, self.max_flowrate_kg_s)
+            if temp > self.negative_temp_limit:
+                temp -= self.temp_increments
+                temp = max(temp, self.negative_temp_limit)
             flowrates.append(flowrate)
             temps.append(temp)
             mass_delivered += flowrate
-        #print(f"Mass delivered: {mass_delivered}")
         pressures = np.linspace(0, 700, len(flowrates))
         return flowrates, pressures, temps

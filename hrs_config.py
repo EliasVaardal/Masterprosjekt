@@ -51,6 +51,9 @@ class HRSConfiguration:
         self.pressure_sensor_uncertainty = None
         self.temperature_sensor_uncertainty = None
 
+        #Caclculation check
+        self.previous_temperature = None
+
     def convert_relative_to_absolute(self, uncertainty, reference):
         """
         Converts relative uncertainty to absolte uncertainty.

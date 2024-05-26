@@ -24,16 +24,14 @@ class FlowProperties:
     standard volumetric flowrate, energy flowrate, and hydrogen density. 
     """
     def __init__(self):
-        self.gas_compressibility_z0 = None  #
         self.gas_constant_r = 8.31451  # (J/mole K)
-        self.absolute_standard_temperature_t0 = 288.15  # K, = 15°C
         self.molar_mass_m = 2.01568*(10**-3)  # (g/mol)*10^-3   ->   2.016×10−3 kg/mol.
-        self.absolute_standard_pressure_p0 = 1  # atm, = 101325Pa
-        self.q_m = None  # Mass flow rate
-        self.h_sm = None
+        self.gas_compressibility_z0 = 1
+        self.abs_std_temperature_t0 = 288.15  # K, = 15°C
+        self.abs_std_pressure_p0 = 1  # atm, = 101325Pa
+        self.superior_calorific_value = None
 
-
-    def calculate_std_vol_flowrate(self):#TODO: Dropp for no,. 
+    def calculate_std_vol_flowrate(self, flowrate):
         """
         Calculates the standard volumetric flow rate.
         Args:
@@ -53,13 +51,13 @@ class FlowProperties:
             (
                 self.gas_compressibility_z0
                 * self.gas_constant_r
-                * self.absolute_standard_temperature_t0
+                * self.abs_std_temperature_t0
             )
-            / (self.molar_mass_m * self.absolute_standard_pressure_p0)
-        ) * (self.q_m)
+            / (self.molar_mass_m * self.abs_std_pressure_p0)
+        ) * (flowrate)
 
 
-    def calculate_energy_flowrate(self):
+    def calculate_energy_flowrate(self, flowrate):
         """
         Calcualtes and returns the energy flow rate. 
         Paramters:
@@ -68,10 +66,10 @@ class FlowProperties:
         Returns:
             Calculated energy flowrate value []
         """
-        return self.h_sm * self.q_m
+        return self.superior_calorific_value * flowrate
 
 
-    def calculate_hydrogen_density(self, pressure, temperature, volume):
+    def calculate_hydrogen_density(self, pressure, temperature):
         """
         https://en.wikipedia.org/wiki/Ideal_gas_law
         Calculate the hydrogen by utilizing the ideal gas law. This is done by
@@ -81,15 +79,9 @@ class FlowProperties:
         Parameters:
             - Pressure: Pressure of the gas (Pa)
             - Temperature: Temperature of the gas (Kelvin)
-            - Volume: Volume of the gas [m3]
 
         Returns: 
             Calculated density (kg/m3)
         """
-        #print(f"Pressure: {pressure}, Temp: {temperature}, Volume: {volume}, R: {self.gas_constant_r}")
-        n = (pressure *volume ) / (self.gas_constant_r*temperature)
-        density2 = n*self.molar_mass_m / volume
-        #print(f"n: {n}, m: {self.molar_mass_m}")
-        #density1 = (pressure * self.molar_mass_m) / (self.gas_constant_r*temperature)
-        #print(f"Density gamle: {density2} Density nye {density1}")
-        return density2
+        density = (pressure * self.molar_mass_m) / (self.gas_constant_r*temperature)
+        return density
