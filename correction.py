@@ -22,7 +22,7 @@ class Correction:
         self.flow_properties = FlowProperties()
 
         # Pipe variables
-        self.pre_fill_pressure = 35000000  #Pa TODO: pascal
+        self.pre_fill_pressure = 70000000  #Pa TODO: pascal
         self.pre_fill_temp = 233.15  # Kelvin
         self.post_fill_pressure = None
         self.post_fill_temp = None

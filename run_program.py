@@ -50,7 +50,7 @@ class RunProgram:
         """
         print(vars(self.hrs_config))
         # Flowrate of kg/sec values. Max 0.06kg/s
-        flowrates_kg_sec, pressures, temperatures = self.simulator.generate_filling_protocol_kg_sec(5)
+        flowrates_kg_sec, pressures, temperatures = self.simulator.generate_filling_protocol_kg_sec(1)
 
         # Flowrate of kg/min values, printed each second. Max 3.6
         flowrate_kgmin_per_second = [x * 60 for x in flowrates_kg_sec]
@@ -125,7 +125,9 @@ class RunProgram:
             self.correction.pre_fill_temp,
             self.correction.post_fill_pressure,
             self.correction.post_fill_temp)
-        
+        print(f"Pre T: {self.correction.pre_fill_temp}, Pre P: {self.correction.pre_fill_pressure}")
+        print(f"Post T: {self.correction.post_fill_temp}, Post P: {self.correction.post_fill_pressure}")
+
         # Calculates the mass error, and total confidence uncertanity
         self.present_mass_data(
             total_mass_delivered,
@@ -138,32 +140,35 @@ class RunProgram:
         )
         #Korregert masse
         mass_corrected = total_mass_delivered - total_error
+        # print(mass_corrected)
 
         #Basert på liste med abs usikkerheter -> returnerer total
         tta, ppa, ana, cfma = self.uncertainty_tools.return_total_system_abs_uncs(abs_cfm_uncertainties_std, abs_temp_cont, abs_pres_cont, abs_an_cont, k)
         
         #Kalkulerer relativ usikkerheter.
-        rel_tt, rel_pp, rel_an, rel_vv, rel_dv, rel_cfm = self.uncertainty_tools.return_total_system_rel_uncs(mass_corrected, abs_cfm_uncertainties_std, abs_dv_unc,abs_vent_unc, abs_temp_cont, abs_pres_cont, abs_an_cont, k)
+        rel_tt, rel_pp, rel_an, rel_vv, rel_dv, rel_cfm = self.uncertainty_tools.return_total_system_rel_uncs(mass_corrected, abs_cfm_uncertainties_std, abs_dv_unc, abs_vent_unc, abs_temp_cont, abs_pres_cont, abs_an_cont, k)
         
         plt.rcParams['font.family'] = 'Times New Roman'
+        plt.rcParams.update({'font.size': 14})
         #self.plot_simulation_variables(flowrate_kgmin_per_second, pressures, temperatures)
         #self.plot_relative_simulation(flowrates_kg_sec, uncertainties_95)
         #self.plot_uncertainty_contributions(uncertainties_95, rel_temp_cont, rel_pres_cont, rel_annual_cont,flowrate_kgmin_per_second)
-        #self.present_mass_correction_table(dead_mass, vented_mass, dv_unc, vv_unc, total_mass_delivered)
+        #self.present_mass_correction_table(dead_mass, vented_mass, abs_dv_unc, abs_vent_unc, total_mass_delivered)
         #self.create_bar_chart(tta, ppa, ana, abs_vent_unc, abs_dv_unc, cfma)
-        #self.create_pie_charts(rel_tt, rel_pp, rel_an, rel_vv, rel_dv, rel_cfm, 0.09)
-        self.run_mass_errors()
+        self.create_pie_charts(rel_tt, rel_pp, rel_an, rel_vv, rel_dv, rel_cfm, 0.09)
+        #self.run_mass_errors()
 
     def run_mass_errors(self):
         volume_vent = 0.00025
         volume_dv = 0.0025
-        pressures_1 = [700, 700,700]
-        pressures_2 = [180, 350, 550]
+        pressures_1 = [700, 700, 180, 350, 550]
+        pressures_2 = [700, 350, 700, 700, 700]
         bar_to_Pa = 100000
         dv_mass = []
         vv_mass = []
         rel_dv_unc = []
         rel_vv_unc = []
+        errors = []
         temperature = 233.15 #-40 Degrees celsius
         for pressures1,pressure2 in zip(pressures_1,pressures_2):
             previous_density = self.flowproperties.calculate_hydrogen_density(pressures1*bar_to_Pa, temperature)
@@ -172,10 +177,13 @@ class RunProgram:
             vv = self.correction.calculate_vented_mass_error(volume_vent, current_density)
             dv_mass.append(dv)
             vv_mass.append(vv)
+            error = dv+vv
+            errors.append(abs(error)/1)
+            print(f"dv: {dv} v  v: {vv}")
 
             abs_dv_unc = self.uncertainty_tools.caclulate_dead_volume_abs_unc(pressures1*bar_to_Pa, temperature, pressure2*bar_to_Pa, temperature, volume_dv)
             abs_vv_unc = self.uncertainty_tools.calculate_depress_abs_unc(pressure2*bar_to_Pa, temperature)
-            print(abs_dv_unc)
+            #print(abs_dv_unc)
             if dv == 0:
                 rel_dv_unc.append(0)
             else:
@@ -186,8 +194,8 @@ class RunProgram:
         df = pd.DataFrame({
             "Previous Pressure [bar]": pressures_1,
             "Current Pressure [bar]": pressures_2,
-            "Dead Volume [kg] (± rel. unc., k=1)": [f"{vol:.4f} ± {unc:.1%}" for vol, unc in zip(dv_mass, rel_dv_unc)],
-            "Vented Volume [kg] (± rel. unc., k=1)": [f"{vol:.4f} ± {unc:.1%}" for vol, unc in zip(vv_mass, rel_vv_unc)]
+            "Dead Volume [kg] (± rel. unc., k=1)": [f"{vol:.3f} ± {unc:.1%}" for vol, unc in zip(dv_mass, rel_dv_unc)],
+            "Vented Volume [kg] (± rel. unc., k=1)": [f"{vol:.3f} ± {unc:.1%}" for vol, unc in zip(vv_mass, rel_vv_unc)]
         })
 
         # Create a figure and a single subplot
@@ -208,7 +216,7 @@ class RunProgram:
 
         # Adjust font size
         the_table.auto_set_font_size(False)
-        the_table.set_fontsize(12)  # Set a larger font size if needed
+        the_table.set_fontsize(14)  # Set a larger font size if needed
         # Adjust layout and scale table
         fig.tight_layout()
         the_table.scale(1, 1.4)  # Adjust the scale factor for vertical size as needed
@@ -216,11 +224,10 @@ class RunProgram:
         plt.show()
 
 
-
     def create_bar_chart(self, abs_tt, abs_pp, abs_an, abs_vv, abs_dv, abs_cfm, log_scale=True):
         # Labels for the contributions
         labels = ['CFM uncertainty', 'Temperature effect', 'Pressure effect', 'Long-term drift', 'Vented mass', 'Dead volume mass']
-        print(f"Deadddvolumeee abs unc: {abs_dv}  Venteeeed abs unc: {abs_vv}")
+        #print(f"Deadddvolumeee abs unc: {abs_dv}  Venteeeed abs unc: {abs_vv}")
         # Values for each absolute contribution
         values = np.array([abs_cfm, abs_tt, abs_pp, abs_an, abs_vv, abs_dv])
         
@@ -229,13 +236,14 @@ class RunProgram:
         # Optionally use a logarithmic scale
         if log_scale:
             ax.set_yscale('log')
-            ylabel = 'Log of Absolute Uncertainty'
+            ylabel = 'Log of Absolute Uncertainty [kg]'
         else:
             ylabel = 'Absolute Uncertainty'
         
         # Colors for each section
         colors = ['Blue','crimson','yellowgreen','magenta', 'springgreen','darkorange']
-        
+        ax.grid(True, which='both', linestyle='-', linewidth=0.5, axis='y', zorder=0)
+        bars = plt.bar(labels, values, color=colors, edgecolor='black', linewidth=1.5, zorder=3)
         # Create bar chart
         bars = plt.bar(labels, values, color=colors)
         plt.xticks(rotation=0, ha='center', fontsize=10)  # Rotate labels to 45 degrees
@@ -249,40 +257,36 @@ class RunProgram:
 
     def present_mass_correction_table(self, dead_volume_error, vent_volume_error, uncertainty_dead, uncertainty_vent, measured_mass):
         """
-        Creates a visual table showing the measured mass, corrections, and uncertainties.
+        Creates a visual table showing the measured mass, corrections, and uncertainties combined in a single column.
         """
         # Calculate the corrected mass
         corrected_mass = measured_mass - dead_volume_error - vent_volume_error
 
         # Calculate the combined uncertainty using quadrature
-        total_uncertainty = ((uncertainty_dead**2 + uncertainty_vent**2)**0.5) * 1000
-
-        # Data to be presented in the table
+        total_uncertainty = ((uncertainty_dead**2 + uncertainty_vent**2)**0.5)
+        # Data to be presented in the table, with uncertainties integrated into the values
         data = [
-            ["Measured Mass", "{:.3f}".format(measured_mass), ""],
-            ["Dead Volume Error", "{:.3f}".format(dead_volume_error), "±{:.3f}".format(uncertainty_dead*1000)],
-            ["Vent Volume Error", "{:.3f}".format(vent_volume_error), "±{:.3f}".format(uncertainty_vent*1000)],
-            ["Corrected Mass", "{:.3f}".format(corrected_mass),  "±{:.3f}".format(total_uncertainty)]
-            ]
-
+            ["Measured Mass", f"{measured_mass:.3f} kg",""],
+            ["Dead Volume Error", f"{dead_volume_error:.3f} kg",f"±{(abs(uncertainty_dead)/abs(dead_volume_error))*100:.2%}"],
+            ["Vent Volume Error", f"{vent_volume_error:.3f} kg",f"±{(uncertainty_vent/vent_volume_error)*100:.2%}"],
+            ["Corrected Mass", f"{corrected_mass:.3f} kg",f"±{(total_uncertainty/corrected_mass)*100:.2%}"],
+        ]
         # Column headers
-        column_labels = ["Parameter", "Value [kg]", "Uncertainty [g]"]
-
-        # Create the table
-        fig, ax = plt.subplots(figsize=(8, 4))  # Adjust the figure size as needed
+        column_labels = ["Parameter", "Value (kg)", "Associated Relative uncetainty, k=1"]
+        fig, ax = plt.subplots(figsize=(10, 5))  # Adjust figure size as needed
         ax.axis('tight')
         ax.axis('off')
-        table = ax.table(cellText=data, colLabels=column_labels, loc='center', cellLoc='center')
+        ax.set_frame_on(False)  # Remove frame, optional
+
+        # Adjust margins
+        plt.subplots_adjust(left=0.2, right=0.8, top=0.8, bottom=0.2)
+
+        table = ax.table(cellText=data, colLabels=column_labels, loc='center', cellLoc='center', colWidths=[0.4, 0.5,0.5])
         table.auto_set_font_size(False)
-        table.set_fontsize(10)  # Adjust font size as needed
-        table.scale(1, 1.4)  # Adjust table scale as needed
+        table.set_fontsize(10)  # Adjust font size for better readability
+        table.scale(1, 1.5)  
 
-        # Setting the cell borders
-        for key, cell in table.get_celld().items():
-            cell.set_edgecolor('black')
-
-        plt.title("Mass Measurement Correction and Uncertainty Table")
-        #plt.savefig(filename, bbox_inches='tight', dpi=300)  # Saves the figure
+        plt.title("Mass Measurement Correction and Uncertainty Table", pad=20, fontsize=14)  # Add padding around the title
         plt.show()
 
     def plot_uncertainty_contributions(self, cfm_unc, temp_cont, pres_cont, an_cont, flowrates):
@@ -301,8 +305,8 @@ class RunProgram:
             plt.plot(flowrates, data, label=label, linestyle=line, color=color, marker='', linewidth=2)
 
         plt.yscale('log')  # Bruk logaritmisk skala for y-aksen
-        plt.title('Uncertainty Contributions Across Different Flowrates')
-        plt.xlabel('Flowrate (m^3/s)')
+        plt.title('Relative Uncertainty Contributions Across Different Flowrates')
+        plt.xlabel('Flowrate (kg/s)')
         plt.ylabel('Relative Uncertainty (log scale)')  # Presiser at skalaen er logaritmisk i y-aksen label
         plt.legend()
         plt.grid(True, which="both", linestyle='--', linewidth=0.5)  # Tilpass gridlinjene for bedre lesbarhet
@@ -317,36 +321,36 @@ class RunProgram:
             - Flowrates in kg/sec
         
         """
-        # Create a figure and a set of subplots gpt
+        plt.rcParams.update({'font.size': 14})
         fig, ax1 = plt.subplots()
 
-        # Plotting the flowrates with x-axis as the index of data points
-        color = "tab:red"
-        ax1.set_xlabel("Time (s)")
-        ax1.set_ylabel("Flowrates (kg/sec)", color=color)
+        # Plotting the flow rates
+        color = 'tab:red'
+        ax1.set_xlabel('Time (s)')
+        ax1.set_ylabel('Flowrates (kg/sec)', color=color)
         ax1.plot(flowrates_kg_sec, color=color)
-        ax1.tick_params(axis="y", labelcolor=color)
+        ax1.tick_params(axis='y', labelcolor=color)
+        ax1.set_ylim([0, max(flowrates_kg_sec) * 1.1])  # Give some headroom
 
-        # Creating a second y-axis for pressures using the same x-axis
+        # Pressures
         ax2 = ax1.twinx()
-        color = "tab:blue"
-        ax2.set_ylabel("Pressures", color=color)
+        color = 'tab:blue'
+        ax2.set_ylabel('Pressures  (bar)', color=color)
         ax2.plot(pressures, color=color)
-        ax2.tick_params(axis="y", labelcolor=color)
+        ax2.tick_params(axis='y', labelcolor=color)
+        ax2.set_ylim([min(pressures) * 0.9, max(pressures) * 1.1])  # Give some headroom
 
-        # Creating a third axis object by cloning the first axis
+        # Temperature
         ax3 = ax1.twinx()
-        ax3.spines["right"].set_position(("axes", 1.2))  # Offset the right spine
-        color = "tab:green"
-        ax3.set_ylabel("Temperature", color=color)
+        ax3.spines['right'].set_position(('axes', 1.2))  # This offsets the temperature axis
+        color = 'tab:green'
+        ax3.set_ylabel('Temperature (°C)', color=color)
         ax3.plot(temperature, color=color)
-        ax3.tick_params(axis="y", labelcolor=color)
-
-        # Adding a title and a legend
+        ax3.tick_params(axis='y', labelcolor=color)
+        fig.tight_layout()
         plt.title("Flowrates, Pressures, and Temperature vs. Time")
-        fig.tight_layout()  # Adjusts the plot to make room for the right y-label
-        # Show the plot
         plt.show()
+
 
     def plot_relative_simulation(self, flowrate_kg_sec, uncertainties_kg_sec_relative):
         """
@@ -384,7 +388,7 @@ class RunProgram:
 
         plt.title("Flowrate vs Relative Uncertainty")
         plt.xlabel("Flowrate (kg/min)")
-        plt.ylabel("Relative Uncertainty (%)")
+        plt.ylabel("Relative Uncertainty (%), k=1")
         plt.grid(True)
         plt.axhline(0, color="red", linewidth=0.5)  # Zero line for reference
         plt.legend()
@@ -454,15 +458,15 @@ class RunProgram:
         table.set_fontsize(12)  # Adjust fontsize according to your preference
         table.scale(1.5, 1.5)  # Adjust scaling factor to change cell size
 
-        plt.subplots_adjust(left=0.2, right=0.8, top=0.6, bottom=0.4)
+        #plt.subplots_adjust(left=0.2, right=0.8, top=0.6, bottom=0.4)
         
         #plt.show()
 
 
     def create_pie_charts(self, rel_tt, rel_pp, rel_an, rel_vv, rel_dv, rel_cfm, zoom_threshold):
         # Labels for each category
-        labels = ['Temperature Uncertainty', 'Pressure Uncertainty', 'Analytical Uncertainty', 
-                'Vented Volume Uncertainty', 'Dead Volume Uncertainty', 'CFM Uncertainty']
+        labels = ['Temperature Uncertainty', 'Pressure Unc', 'Long-term drift Unc', 
+                'Vented Unc', 'Dead Volume Uncertainty', 'CFM Uncertainty']
 
         # Relative uncertainties as values
         values = [rel_tt, rel_pp, rel_an, rel_vv, rel_dv, rel_cfm]
@@ -505,7 +509,6 @@ class RunProgram:
             ax[1].text(0.5, 0.5, 'No minor uncertainties to display', horizontalalignment='center', verticalalignment='center')
             ax[1].set_title('Detailed View of Minor Uncertainties')
             ax[1].axis('off')
-
         plt.tight_layout()
         plt.show()
                 

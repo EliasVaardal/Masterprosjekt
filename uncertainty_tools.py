@@ -512,8 +512,8 @@ class UncertaintyTools:
         tt_unc = self.calculate_total_combined_unc(tts, 1)
         pp_unc = self.calculate_total_combined_unc(pps, 1)
         an_unc = self.calculate_total_combined_unc(ans, 1)
-        print(f"total tt : {tt_unc} kg")
-        print(f"total pp: {pp_unc} kg")
+        #print(f"total tt : {tt_unc} kg")
+        #print(f"total pp: {pp_unc} kg")
 
         rel_tt = (tt_unc / mass_delivered) * 100
         rel_pp = (pp_unc / mass_delivered) * 100
@@ -522,7 +522,7 @@ class UncertaintyTools:
         rel_dv = (dvs / mass_delivered) * 100
         rel_cfm = (cfm_uncertainty / mass_delivered) * 100
         var = self.calculate_sum_variance(rel_tt, rel_pp, rel_cfm, rel_an, rel_vv, rel_dv)
-        print(f"vars: {var}")
+        #print(f"vars: {var}")
 
         return rel_tt, rel_pp, rel_an, rel_vv, rel_dv, rel_cfm
     
@@ -556,13 +556,6 @@ class UncertaintyTools:
         abs_pres_cont = (rel_pres_cont / 100) * (flowrate / 60)
         return abs_pres_cont
 
-    def calculate_abs_temp_unc_per_sampl_old(self, temperature):
-        abs_temp_kg_min = self.hrs_config.temperature_contribution  #7.5E-5 kg/min
-        abs_temp_kg_s = abs_temp_kg_min / 60  # kg s
-        init_temp = 20
-        temp_change = init_temp - temperature
-        return abs_temp_kg_s * temp_change  # per c * kg s
-
     def calculate_abs_temp_per_sample(self, temperature):
         prev_temp = self.hrs_config.previous_temperature
         if temperature != prev_temp:
@@ -587,26 +580,6 @@ class UncertaintyTools:
         """
         abs_temp_kg_s = self.calculate_abs_temp_per_sample(temperature)
         rel_unc = (abs_temp_kg_s / flowrate) * 100  # *(-1)
-        return rel_unc
-
-    def calculate_relative_temperature_uncertainty_old(self, flowrate, temperature):
-        """
-        Returns the relative uncertainty associated to increasing temperature.
-        If this module is to be utilized in a different program, the temp_init
-        must be set as the starting temperature.
-
-        Parameters:
-            - flowrate [kg/min]
-            - Temperature [C]
-
-        Return:
-            - Relative uncertainty associated to temperature.
-        """
-        temp_init = 20
-        temp_change = temperature - temp_init
-        abs_temp_kg_s = self.hrs_config.temperature_contribution / 60  # kg/min -> kg/s
-        abs_temp_kg_s_cont = abs_temp_kg_s * temp_change
-        rel_unc = (abs_temp_kg_s_cont / flowrate) * -100  # *(-1)
         return rel_unc
 
     def calculate_relative_annual_dev(self):
