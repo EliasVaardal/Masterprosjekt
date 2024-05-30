@@ -68,7 +68,10 @@ class HRSConfiguration:
     def get_dead_volume(self):
         """The Excel template requires dm3 input, so the code converts dm3 to m3, and
         return the size of the dead volume [m3]."""
-        return self.dead_volume
+        if self.correct_for_dead_volume_bool:
+            return self.dead_volume
+        else:
+            return 0
 
     def get_dead_volume_uncertainty(self):
         """Return the uncertainty of the dead volume."""
@@ -78,7 +81,10 @@ class HRSConfiguration:
 
     def get_depressurization_vent_volume(self):
         """Return the volume of the depressurization vent."""
-        return self.depressurization_vent_volume
+        if self.correct_for_depress_bool:
+            return self.depressurization_vent_volume
+        else:
+            return 0
 
     def get_depressurization_vent_volume_unc(self):
         """Return the uncertainty of the volume of the depressurization vent."""

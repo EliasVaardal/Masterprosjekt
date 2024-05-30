@@ -47,5 +47,5 @@ class GenerateFlowData:
             flowrates.append(flowrate)
             temps.append(temp)
             mass_delivered += flowrate
-        pressures = np.linspace(350, 550, len(flowrates))
+        pressures = np.linspace(0, 700, len(flowrates))
         return flowrates, pressures, temps

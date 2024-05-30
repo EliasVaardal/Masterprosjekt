@@ -22,7 +22,7 @@ class Correction:
         self.flow_properties = FlowProperties()
 
         # Pipe variables
-        self.pre_fill_pressure = 70000000  #Pa TODO: pascal
+        self.pre_fill_pressure = 35000000  #Pa TODO: pascal
         self.pre_fill_temp = 233.15  # Kelvin
         self.post_fill_pressure = None
         self.post_fill_temp = None
@@ -83,6 +83,6 @@ class Correction:
         #Calculate vented mass error
         vented_mass = self.calculate_vented_mass_error(prev_density, volume_vv)
 
-        print(f"Dead volume mass {dv_mass_error} Vented mass: {vented_mass}")
+        #print(f"Dead volume mass {dv_mass_error} Vented mass: {vented_mass}")
         total_error = dv_mass_error + vented_mass
         return total_error, vented_mass, dv_mass_error
