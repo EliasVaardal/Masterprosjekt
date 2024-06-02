@@ -1,9 +1,7 @@
 """
 This module acts as the main simulation of the program, utilizing all classes
-in the program-module. It contains the class RunProgram, which
-
-
-testing code, utilizing all classes in the uncertainty calculation program.
+in the program-module. It contains the class PresentData. It serves as the 
+main method to run when performing simulation.
 """
 
 import numpy as np
@@ -26,10 +24,9 @@ class PresentData:
     calculate uncertainty based on file data(UncertaintyTools), correct the errors (Correction)
     and finally contains methods to present the data.
     """
-
     def __init__(self):
         """
-        As the RunProgram object is created, it sets in motion multiple classes, some which
+        As the PresentData object is created, it sets in motion multiple classes, some which
         are used for parameters for others. Furthermore it reads data, and stores it in varaibles.
         """
         self.hrs_config = HRSConfiguration()
@@ -74,18 +71,25 @@ class PresentData:
         self.tot_abs_press = None
         self.tot_abs_ltd = None
         self.k = None
-        self.total_relative_fill_unc_k = None # THe total filling uncertainty
+        self.total_relative_fill_unc_k = None # The total filling uncertainty
 
     def run_simulation(self, k):
         """
-        1. Generates kg/sec flowrates.
-        2. Times by 60 to get kg/min flowrates, sampled per second.
+        This method is considered the main() function of the simulation of this framework.
+        It collects simulation data, and calculates the different uncertainties over this.
+        Following this, it utilizes multiple built in methods to format and present the data.
+
+        Parameters:
+            - k: Confidence level to perform calculations at
+
+        Returns:
+            - None
         """
         self.k = k
         # print(vars(self.hrs_config))
         # Flowrate of kg/sec values. Max 0.06kg/s
         self.flowrates_kg_sec, self.pressures, self.temperatures = (
-            self.simulator.generate_filling_protocol_kg_sec(5)
+            self.simulator.generate_filling_protocol_kg_sec(1)
         )
 
         # Flowrate of kg/min values, printed each second. Max 3.6
@@ -100,43 +104,36 @@ class PresentData:
             temperature = self.temperatures[index]
             pressure = self.pressures[index]
             index += 1
+
             # Get the abs std cfm uncertainty per flow rate
             uncertainty_std_cfm = self.uncertainty_tools.calculate_cfm_abs_unc_std(
                 flowrate
             )
-
             # Get the absolute cfm + temp + press + annual standard uncertainty
             uncertainty_std_total = self.uncertainty_tools.calculate_total_abs_unc_std(
-                flowrate, temperature, pressure
+               flowrate, temperature, pressure
             )
-
             # Get the cfm + temp pres annual relative uncertainy
             comb_rel_uncertainty_k = self.uncertainty_tools.calculate_cfm_rel_unc_k(
                 flowrate, temperature, pressure, self.k
             )
-
             # Get the cfm rel uncertainty
             cfm_rel_uncertainty = self.uncertainty_tools.calculate_cfm_rel_unc_k(
                 flowrate, temperature, pressure, self.k, string="CFM"
             )
-
             # Save to lists
             self.abs_cfm_uncertainties_std.append(uncertainty_std_cfm)
             self.abs_total_uncs_std.append(uncertainty_std_total)
             self.comb_rel_unc_k.append(comb_rel_uncertainty_k)
             self.rel_cfm_uncs.append(cfm_rel_uncertainty)
 
-            print(
-                f"Time: {timer} seconds - Flow rate: {np.around(flowrate, 2)} kg/min ± {np.around(comb_rel_uncertainty_k,3)}%"
-            )
-
-            timer += 1
             # Calculate contributions per flowrate, and append to respective lists.
             rel_tt, rel_pp, rel_aa, abs_tt, abs_pp, abs_aa = (
                 self.uncertainty_tools.return_misc_press_data(
                     flowrate, pressure, temperature
                 )
             )
+            # Add all these contributions to a list.
             self.rel_temp_conts.append(rel_tt)
             self.rel_pres_conts.append(rel_pp)
             self.rel_ltd_conts.append(rel_aa)
@@ -144,7 +141,12 @@ class PresentData:
             self.abs_pres_conts.append(abs_pp)
             self.abs_ltd_conts.append(abs_aa)
             self.hrs_config.previous_temperature = temperature
-
+            # Lastly print info per flow rate.
+            #print(
+            #    f"Time: {timer} seconds - Flow rate: {np.around(flowrate, 2)} 
+            #    kg/min ± {np.around(comb_rel_uncertainty_k,3)}%"
+            #)
+            timer += 1
         # Convert temp and pres to K and Pa for correction format.
         self.correction.post_fill_pressure = pressure * 100000
         self.correction.post_fill_temp = temperature + 273.15
@@ -169,8 +171,6 @@ class PresentData:
                 self.correction.post_fill_temp,
             )
         )
-        #print(f"Pre T:{self.correction.pre_fill_temp},PreP:{self.correction.pre_fill_pressure}")
-        #print(f"Post T:{self.correction.post_fill_temp},PostP:{self.correction.post_fill_pressure}")
         self.present_mass_data(k)
 
         # Based on the lists, calculate total absolute and relative uncertainties.
@@ -194,7 +194,7 @@ class PresentData:
             self.abs_pres_conts,
             self.abs_ltd_conts,
         )
-
+        # Present everything
         plt.rcParams["font.family"] = "Times New Roman"
         plt.rcParams.update({"font.size": 14})
         self.plot_simulation_variables()
@@ -202,18 +202,19 @@ class PresentData:
         self.plot_uncertainty_contributions()
         self.present_mass_correction_table()
         self.create_bar_chart()
+        self.create_comparison_bars(1)
         self.create_pie_charts(0.09)
         self.run_mass_errors()
 
     def run_mass_errors(self):
         """
-        Presents mass errors based on pressures defined within the function. The method calculates the systematic
-        mass errors and its related uncertainties.
+        Presents mass errors based on pressures defined within the function. 
+        The method calculates the systematic mass errors and its related uncertainties.
         """
         volume_vent = 0.00025
         volume_dv = 0.0025
-        pressures_1 = [700, 700, 180, 350, 550]
-        pressures_2 = [700, 350, 700, 700, 700]
+        pressures_1 = [180, 350, 700]
+        pressures_2 = [180, 350, 700]
         bar_to_Pa = 100000
         dv_mass = []
         vv_mass = []
@@ -238,7 +239,6 @@ class PresentData:
             vv_mass.append(vv)
             error = dv + vv
             errors.append(abs(error) / 1)
-            print(f"dv: {dv} v  v: {vv}")
 
             abs_dv_unc = self.uncertainty_tools.caclulate_dead_volume_abs_unc(
                 pressures1 * bar_to_Pa,
@@ -250,22 +250,27 @@ class PresentData:
             abs_vv_unc = self.uncertainty_tools.calculate_depress_abs_unc(
                 pressure2 * bar_to_Pa, temperature
             )
+            #print(f"Endfillpressure: {pressure2*bar_to_Pa}, vent error: {vv}, 
+            #      abs_unc: {abs_vv_unc}")
+            #print(f"dv: {abs_dv_unc} v  v: {abs_vv_unc}")
             if dv == 0:
                 rel_dv_unc.append(0)
             else:
                 rel_dv_uncc = abs(abs_dv_unc / dv) * 100
                 rel_dv_unc.append(rel_dv_uncc)
             rel_vv_unc.append((abs_vv_unc / vv) * 100)
+        # Break for loop
         df = pd.DataFrame(
             {
                 "Previous Pressure [bar]": pressures_1,
                 "Current Pressure [bar]": pressures_2,
                 "Dead Volume [kg] (± rel. unc., k=1)": [
-                    f"{vol:.3f} ± {unc:.1%}" for vol, unc in zip(dv_mass, rel_dv_unc)
+                    f"{vol:.3f} ± {unc:.2%}" for vol, unc in zip(dv_mass, rel_dv_unc)
                 ],
                 "Vented Volume [kg] (± rel. unc., k=1)": [
-                    f"{vol:.3f} ± {unc:.1%}" for vol, unc in zip(vv_mass, rel_vv_unc)
-                ],
+                    f"{vol:.3f} ± {unc:.2%}" for vol, unc in zip(vv_mass, rel_vv_unc)
+                ]
+                #"Relative Error (ref. 1kg)" : [f"{error:.2%}" for error in errors]
             }
         )
         # Create a figure and a single subplot
@@ -284,20 +289,20 @@ class PresentData:
         fig.tight_layout()
         the_table.scale(1, 1.4)
         plt.show()
-
+        
     def create_bar_chart(self):
         """
-        Presents the total absolute uncertainties, after they have accumlated over the filling process.
-        The uncertainties are collected from class parameters.
+        Presents the total absolute uncertainties, after they have accumlated over 
+        the filling process. The uncertainties are collected from class parameters.
 
         Parameters:
-            - Log_scale: Boolean value if present as log y axis or not.
+            - None
 
         Returns:
             - None
         """
         labels = [
-            "CFM uncertainty",
+            "CFM",
             "Temperature effect",
             "Pressure effect",
             "Long-term drift",
@@ -329,10 +334,8 @@ class PresentData:
         bars = plt.bar(
             labels, values, color=colors, edgecolor="black", linewidth=1.5, zorder=3
         )
-        # Create bar chart
         bars = plt.bar(labels, values, color=colors)
-        plt.xticks(rotation=0, ha="center", fontsize=10)  # Rotate labels to 45 degrees
-        # Adding the value labels on top of each bar
+        plt.xticks(rotation=0, ha="center", fontsize=10)
         for barx in bars:
             yval = barx.get_height()
             plt.text(
@@ -341,24 +344,67 @@ class PresentData:
                 f"{yval:.2e} kg",
                 ha="center",
                 va="bottom",
-            )  # Using scientific notation
+            )
         plt.ylabel(ylabel)
         plt.title("Absolute uncertainty contributions k=1")
         plt.show()
+    def create_comparison_bars(self, reference):
+        """
+        Presentation method utilized to present the difference between the temperature
+        and error uncertainties.
+        """
+        volume_vent = 0.00025
+        volume_dv = 0.0025
+        pressures1 = [180, 350, 550]
+        pressures2 = [700, 500, 700]
+        bar_to_Pa = 100000
+        rel_dv_uncs = []
+        rel_vv_uncs = []
+        temperature = 233.15  # -40 Degrees Celsius       
+        for pre_pres, post_pres in zip(pressures1, pressures2):
+            abs_dv_unc = self.uncertainty_tools.caclulate_dead_volume_abs_unc(
+                pre_pres * bar_to_Pa, temperature, post_pres * bar_to_Pa, temperature, volume_dv
+            )
+            abs_vv_unc = self.uncertainty_tools.calculate_depress_abs_unc(
+                post_pres * bar_to_Pa, temperature
+            )
+            rel_dv_unc = (abs_dv_unc / reference) * 100
+            rel_vv_unc = (abs_vv_unc / reference) * 100
+            rel_dv_uncs.append(rel_dv_unc)
+            rel_vv_uncs.append(rel_vv_unc)
+
+        labels = [f'P1={p1}, P2={p2} bar' for p1, p2 in zip(pressures1, pressures2)]
+        labels.append('Temperature effect uncertainty')
+        x = np.arange(len(labels))
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.bar(x - 0.2, rel_dv_uncs + [0], width=0.4, label='DV Uncertainty', color='skyblue')
+        ax.bar(x + 0.2, rel_vv_uncs + [0], width=0.4, label='VV Uncertainty', color='orange')
+        rel_temp_mmq = (self.tot_abs_temp / reference) * 100
+        ax.bar(len(labels)-1, rel_temp_mmq, width=0.4, label='Temperature Uncertainty', color='green')
+
+        ax.set_xlabel('')
+        ax.set_ylabel(f'Relative Uncertainty (%) (ref. = {reference} kg)')
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, rotation=0)
+        ax.legend()
+
+        plt.tight_layout()
+        plt.show()
+
 
     def present_mass_correction_table(self):
         """
-        Creates a visual table showing the measured mass, corrections, and uncertainties combined in a single column.
-        The values utilized are collected from the class using .self.
+        Creates a visual table showing the measured mass, corrections, and uncertainties 
+        combined in a single column. The values utilized are collected from the class using .self.
         Parameters:
             - None
 
         Returns:
             - None
         """
-        # Calculate the combined uncertainty using quadrature
         total_uncertainty = (self.vent_abs_unc**2 + self.dv_abs_unc**2) ** 0.5
-        # Data to be presented in the table, with uncertainties integrated into the values
+        #print(f"test:Pressure {self.correction.post_fill_pressure} 
+        #Vent: {self.vented_error} Vented uncertainty:{self.vent_abs_unc}")
         data = [
             ["Measured Mass", f"{self.mass_uncorrected:.3f} kg", ""],
             ["Dead Volume Error", f"{0} kg", f"± {0:.2%}"],
@@ -373,17 +419,15 @@ class PresentData:
                 f"± {(total_uncertainty/self.mass_corrected)*100:.2%}",
             ],
         ]
-        # Column headers
         column_labels = [
             "Parameter",
             "Value (kg)",
             "Associated Relative uncetainty(%), k=1",
         ]
-        fig, ax = plt.subplots(figsize=(10, 5))  # Adjust figure size as needed
+        fig, ax = plt.subplots(figsize=(10, 5))
         ax.axis("tight")
         ax.axis("off")
-        ax.set_frame_on(False)  # Remove frame, optional
-        # Adjust margins
+        ax.set_frame_on(False)
         plt.subplots_adjust(left=0.2, right=0.8, top=0.8, bottom=0.2)
         table = ax.table(
             cellText=data,
@@ -393,11 +437,11 @@ class PresentData:
             colWidths=[0.4, 0.5, 0.5],
         )
         table.auto_set_font_size(False)
-        table.set_fontsize(10)  # Adjust font size for better readability
+        table.set_fontsize(10) 
         table.scale(1, 1.5)
         plt.title(
             "Mass Measurement Correction and Uncertainty Table", pad=20, fontsize=14
-        )  # Add padding around the title
+        ) 
         plt.show()
 
     def plot_uncertainty_contributions(self):
@@ -412,7 +456,6 @@ class PresentData:
             - None
         """
         plt.figure(figsize=(12, 8))
-        # Set up the colors to maintain consistency.
         colors = ["blue", "crimson", "magenta", "yellowgreen"]
         labels = [
             "CFM Contribution",
@@ -421,8 +464,6 @@ class PresentData:
             "Long-term drift Contribution",
         ]
         lines = ["-", "-", "-", "-"]
-
-        # Plot data with the chosen parameters above
         for data, color, label, line in zip(
             [
                 self.rel_cfm_uncs,
@@ -444,16 +485,16 @@ class PresentData:
                 linewidth=2,
             )
 
-        plt.yscale("log")  # Set log y axis
+        plt.yscale("log")
         plt.title("Relative Uncertainty Contributions Across Different Flowrates")
         plt.xlabel("Flowrate (kg/min)")
         plt.ylabel(
             "Relative Uncertainty(%)(log scale)"
-        )  # Presiser at skalaen er logaritmisk i y-aksen label
+        ) 
         plt.legend()
         plt.grid(
             True, which="both", linestyle="--", linewidth=0.5
-        )  # Tilpass gridlinjene for bedre lesbarhet
+        )  
         plt.show()
 
     def plot_simulation_variables(self):
@@ -471,7 +512,7 @@ class PresentData:
         fig, ax1 = plt.subplots()
         color = "tab:red"
         ax1.set_xlabel("Time (s)")
-        ax1.set_ylabel("Flowrates (kg/sec)", color=color)
+        ax1.set_ylabel("Flowrates (kg/min)", color=color)
         ax1.plot(self.flowrate_kgmin_per_second, color=color)
         ax1.tick_params(axis="y", labelcolor=color)
         ax1.set_ylim([0, max(self.flowrate_kgmin_per_second) * 1.1])
@@ -484,7 +525,7 @@ class PresentData:
         ax2.tick_params(axis="y", labelcolor=color)
         ax2.set_ylim(
             [min(self.pressures) * 0.9, max(self.pressures) * 1.1]
-        )  # Give some headroom
+        )
 
         # Temperature
         ax3 = ax1.twinx()
@@ -523,7 +564,6 @@ class PresentData:
         uncertainties_thinned = uncertainties_kg_sec_relative[::n]
 
         plt.figure(figsize=(10, 5))
-        # Can set alpha to 1 to see measured points
         plt.scatter(
             flowrate_thinned,
             uncertainties_thinned,
@@ -547,7 +587,7 @@ class PresentData:
         plt.xlabel("Flowrate (kg/min)")
         plt.ylabel(f"Relative Uncertainty (%), k={self.k}")
         plt.grid(True)
-        plt.axhline(0, color="red", linewidth=0.5)  # Zero line for reference
+        plt.axhline(0, color="red", linewidth=0.5)
         plt.legend()
         plt.show()
 
@@ -571,7 +611,7 @@ class PresentData:
         self.total_relative_fill_unc_k = (
             self.uncertainty_tools.calculate_total_system_rel_unc_k(
                 self.mass_corrected,
-                self.abs_cfm_uncertainties_std,
+                self.abs_total_uncs_std,
                 self.correction.pre_fill_pressure,
                 self.correction.pre_fill_temp,
                 self.correction.post_fill_pressure,
@@ -579,30 +619,33 @@ class PresentData:
                 k,
             )
         )
+        tot_cfm = self.uncertainty_tools.calculate_total_combined_unc(self.abs_cfm_uncertainties_std, 1/60)
+        rel_cfm = ((tot_cfm*100)/self.mass_corrected)*k
+
         # Prints results.
         print("Total mass delivered (before correction):", self.mass_uncorrected, "kg")
         print(
             f"Total mass delivered (after correction): {self.mass_corrected}kg ± {self.total_relative_fill_unc_k} %, k={k}"
         )
-        data = [
-            [
-                "Total mass delivered (after correction)",
-                f"{self.mass_corrected:.3f} kg ± {self.total_relative_fill_unc_k:.1f} %",
-            ]
+        data = [["Total mass delivered (uncorrected):", f"{self.mass_uncorrected:.3f} kg ± {rel_cfm:.2f}%"],
+            ["Total mass delivered (corrected)", f"{self.mass_corrected:.3f} kg ± {self.total_relative_fill_unc_k:.2%}"]
         ]
-        fig, ax = plt.subplots(figsize=(8, 4))
-        ax.axis("tight")
-        ax.axis("off")
+
+        fig, ax = plt.subplots(figsize=(8, 2))
+        ax.axis('off') 
+
         table = ax.table(
             cellText=data,
-            colLabels=["Description", "Value"],
-            cellLoc="center",
-            loc="center",
+            colLabels=["Description", f"Value ± (Rel. unc., k={k})"],
+            cellLoc='center',
+            loc='center',
+            colColours=["#f2f2f2"] * 2 
         )
+
         table.auto_set_font_size(True)
         table.set_fontsize(12)
-        table.scale(1.5, 1.5)
-        plt.subplots_adjust(left=0.2, right=0.8, top=0.6, bottom=0.4)
+        table.scale(1.2, 1.2) 
+        plt.tight_layout()  
         plt.show()
 
     def create_pie_charts(self, zoom_threshold):
@@ -641,9 +684,9 @@ class PresentData:
         ]  # "darkorange", "royalblue"]
         labels = [
             "Temperature Uncertainty",
-            "Pressure Unc",
-            "Long-term drift Unc",
-            "Vented Unc",
+            "Pressure Uncertainty",
+            "Long-term drift Uncertainty",
+            "Vented Uncertainty",
             "CFM Uncertainty",
         ]  #'Dead Volume Uncertainty', 'CFM Uncertainty']
         fig, ax = plt.subplots(1, 2, figsize=(14, 7))
@@ -666,14 +709,12 @@ class PresentData:
             radius=pie_chart_radius,
         )
         ax[0].set_title("Total Relative Uncertainty, k=1")
-        # Manually adjust position of "Dead Volume Uncertainty" label.
         for text, label in zip(texts, labels):
             if label == "Dead Volume Uncertainty":
                 text.set_horizontalalignment("right")
                 text.set_position(
                     (text.get_position()[0] * 1.1, text.get_position()[1])
                 )
-        # Quarter view pie chart for small slices (similar size)
         small_values = [value for value in values if value < small_slices_threshold]
         small_labels = [
             label
@@ -703,7 +744,5 @@ class PresentData:
         plt.tight_layout()
         plt.show()
 
-
 program = PresentData()
-program.run_simulation(1)
-# CONFIDENCE INTERVAL CALCULATOR
+program.run_simulation(2)

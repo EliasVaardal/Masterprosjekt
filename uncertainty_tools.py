@@ -501,16 +501,17 @@ class UncertaintyTools:
             post_fill_press,
             post_fill_temp,
         )
+        print()
         # -> returnerer kalkulert abs usikkerhet til dødvolum [kg]
 
-        print(
-            f"CFM uncertainty: {cfm_uncertainty}kg    Depressurized vent uncertainty: {depress_vent_uncertainty}kg  Dead volume uncertainty: {dead_volume_uncertainty}kg"
-        )
+        #print(
+        #    f"CFM uncertainty: {cfm_uncertainty}kg    Depressurized vent uncertainty: {depress_vent_uncertainty}kg  Dead volume uncertainty: {dead_volume_uncertainty}kg"
+        #)
 
         rel_unc = self.calculate_sum_variance(
-            (cfm_uncertainty / mass_delivered) * 100,
-            (depress_vent_uncertainty / mass_delivered) * 100,
-            (dead_volume_uncertainty / mass_delivered) * 100,
+            (cfm_uncertainty / mass_delivered),
+            (depress_vent_uncertainty / mass_delivered),
+            (dead_volume_uncertainty / mass_delivered),
         )
         expanded_relative_uncertainty = self.convert_std_to_confidence(rel_unc, k)
         return expanded_relative_uncertainty

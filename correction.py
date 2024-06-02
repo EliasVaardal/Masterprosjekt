@@ -81,7 +81,7 @@ class Correction:
         dv_mass_error = self.calculate_dead_volume_mass_error(prev_density, curr_density, volume_dv)
 
         #Calculate vented mass error
-        vented_mass = self.calculate_vented_mass_error(prev_density, volume_vv)
+        vented_mass = self.calculate_vented_mass_error(volume_vv, curr_density)
 
         #print(f"Dead volume mass {dv_mass_error} Vented mass: {vented_mass}")
         total_error = dv_mass_error + vented_mass

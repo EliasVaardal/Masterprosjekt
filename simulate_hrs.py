@@ -1,11 +1,9 @@
 """
 This module contains the GenerateFlowData class, which will return a list of flowrates which
 are similar to those seen in a HRS. The class also offer options for different units, such as
-g/s, kg/min, and kg/hr. Finally, the test_simulation() tries the method and prints the flowrates.
+g/s, kg/min, and kg/hr.
 Classes:
     GenerateFlowData
-Methods:
-    test_simulation()
 """
 import numpy as np
 
@@ -24,10 +22,12 @@ class GenerateFlowData:
 
     def generate_filling_protocol_kg_sec(self, vehicle_tank_size_kg):
         """ 
-        Work in progress.
         This method generates flow rates similar to those seen in a HRS, in the
         form of kg/second. It has 3 stages, increase, mass_flowrate_top, and 
         decline.  
+
+        Parameters:
+            - Vehicle tank size kg: The capacity of the tank to be filled.
         """
         mass_delivered = 0
         flowrate = 0
